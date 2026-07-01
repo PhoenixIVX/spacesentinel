@@ -1,0 +1,2403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050A12">
+<title>SPACE SENTINEL — Solar System · Asteroids · Comets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/astronomy-engine/2.1.19/astronomy.browser.min.js" crossorigin="anonymous"></script>
+<style>
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --void:    #050A12;
+  --panel:   #070D1A;
+  --card:    #0A1422;
+  --card-hi: #0E1C30;
+  --b1:      #0C1E38;
+  --b2:      #142840;
+  --b3:      #1E3858;
+  --t1:      #B8D8F8;
+  --t2:      #3A6080;
+  --t3:      #162840;
+  --c:       #00C0FF;
+  --cg:      rgba(0,192,255,.28);
+  --cd:      rgba(0,192,255,.07);
+  --h:       #FF5C1A;
+  --hg:      rgba(255,92,26,.28);
+  --hd:      rgba(255,92,26,.07);
+  --g:       #00E890;
+  --gd:      rgba(0,232,144,.07);
+  --moon:    #5A7898;
+  --comet:   #BFEFFF;
+  --read:    #9CC4E8;
+}
+
+html, body {
+  min-height: 100%;
+  background: var(--void);
+  color: var(--t1);
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+#starfield { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.vignette {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(5,10,18,0.72) 100%);
+  pointer-events: none; z-index: 0;
+}
+
+.app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px; border-bottom: 1px solid var(--b1);
+  background: rgba(5,10,18,0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100; gap: 16px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand-icon {
+  width: 38px; height: 38px; border: 1.5px solid var(--c);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--c); font-size: 16px; flex-shrink: 0;
+  animation: iconPulse 3s ease-in-out infinite;
+}
+@keyframes iconPulse {
+  0%,100% { box-shadow: 0 0 12px var(--cg), inset 0 0 8px rgba(0,192,255,.06); }
+  50%      { box-shadow: 0 0 28px var(--cg), inset 0 0 18px rgba(0,192,255,.16); }
+}
+.brand-name { font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 4px; color: var(--c); text-shadow: 0 0 22px var(--cg); line-height: 1; }
+.brand-sub { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 3px; color: var(--t2); margin-top: 3px; }
+
+.nav-tabs { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--b2); padding: 4px; }
+.nav-tab {
+  font-family: 'Orbitron', sans-serif; font-size: 10px; letter-spacing: 2px;
+  color: var(--t2); background: transparent; border: none; padding: 9px 16px;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.nav-tab:hover { color: var(--t1); }
+.nav-tab.active { color: var(--void); background: var(--c); box-shadow: 0 0 16px var(--cg); }
+.header-date { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--t3); letter-spacing: 1.5px; white-space: nowrap; }
+.tab-panel { display: none; opacity: 0; transition: opacity .22s ease; }
+#panel-home.active { display: flex; flex-direction: column; height: calc(100vh - var(--header-h, 70px)); min-height: 460px; overflow: hidden; }
+.tab-panel.active { display: block; }
+.tab-panel.fade-in { opacity: 1; }
+.eyebrow { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 4px; color: var(--t2); text-align: center; }
+.hero-section { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--b1); }
+.radar-side { padding: 28px; border-right: 1px solid var(--b1); display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.radar-canvas-container { width: 100%; max-width: 440px; aspect-ratio: 1/1; position: relative; align-self: center; }
+.radar-zoom-group { position: absolute; top: 6px; right: 6px; display: flex; flex-direction: column; gap: 4px; z-index: 5; }
+.radar-zoom-label { position: absolute; bottom: 6px; left: 6px; font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px; color: var(--read); background: rgba(7,13,26,.75); border: 1px solid var(--b2); padding: 4px 8px; z-index: 5; }
+.radar-canvas-container canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.radar-legend { display: flex; gap: 18px; font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: var(--t2); flex-wrap: wrap; justify-content: center; }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.legend-dot.cyan { background: var(--c); box-shadow: 0 0 5px var(--c); }
+.legend-dot.orange { background: var(--h); box-shadow: 0 0 5px var(--h); }
+.legend-dot.green { background: var(--g); box-shadow: 0 0 5px var(--g); }
+.legend-dot.moon { background: var(--moon); }
+.legend-dot.grey { background: var(--t2); }
+.stats-side { padding: 28px; display: flex; flex-direction: column; gap: 12px; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-card { background: var(--card); border: 1px solid var(--b2); padding: 18px 16px; position: relative; overflow: hidden; }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 100%; background: var(--c); opacity: .7; }
+.stat-card.h-card::before { background: var(--h); }
+.stat-card.g-card::before { background: var(--g); }
+.stat-value { font-family: 'Orbitron', sans-serif; font-size: 28px; font-weight: 700; color: var(--c); text-shadow: 0 0 22px rgba(0,192,255,.5); letter-spacing: 2px; line-height: 1; margin-bottom: 8px; }
+.stat-card.h-card .stat-value { color: var(--h); text-shadow: 0 0 22px rgba(255,92,26,.5); }
+.stat-card.g-card .stat-value { color: var(--g); text-shadow: 0 0 22px rgba(0,232,144,.5); }
+.stat-label { font-family: 'Orbitron', sans-serif; font-size: 7.5px; letter-spacing: 2.5px; color: var(--t2); margin-bottom: 3px; }
+.stat-sub { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--t3); }
+.next-card { background: var(--card); border: 1px solid var(--b2); padding: 16px; position: relative; overflow: hidden; }
+.next-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, var(--c), transparent 70%); }
+.next-card-eyebrow { font-family: 'Orbitron', sans-serif; font-size: 7.5px; letter-spacing: 3px; color: var(--t2); margin-bottom: 10px; }
+.next-name { font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 600; color: var(--t1); margin-bottom: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.next-meta { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--read); line-height: 2; }
+.list-section { padding: 24px 28px 56px; }
+.list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+.controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.filter-btn { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--t2); background: transparent; border: 1px solid var(--b2); padding: 5px 11px; cursor: pointer; transition: all .14s; white-space: nowrap; }
+.filter-btn:hover, .filter-btn.active { color: var(--c); border-color: var(--c); background: var(--cd); }
+.filter-btn.active.h-filter { color: var(--h); border-color: var(--h); background: var(--hd); }
+.filter-btn.active.g-filter { color: var(--g); border-color: var(--g); background: var(--gd); }
+.sort-wrap { display: flex; align-items: center; gap: 6px; font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--t2); }
+.sort-wrap select, select.sw-select {
+  background: var(--card); color: var(--t1); border: 1px solid var(--b2); padding: 4px 8px;
+  font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px; cursor: pointer; appearance: none; -webkit-appearance: none;
+}
+.objects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; }
+.obj-card { background: var(--card); border: 1px solid var(--b1); padding: 15px 16px; cursor: pointer; transition: border-color .14s, background .14s, transform .14s; position: relative; overflow: hidden; }
+.obj-card::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 1px; background: var(--c); transition: width .25s ease; }
+.obj-card.pha::after { background: var(--h); }
+.obj-card.active-comet::after { background: var(--g); }
+.obj-card:hover { border-color: var(--b3); background: var(--card-hi); transform: translateY(-1px); }
+.obj-card.radar-hover { border-color: var(--c); background: var(--card-hi); box-shadow: 0 0 0 1px var(--c), 0 0 18px -4px var(--cg); }
+.obj-card.radar-hover.pha { border-color: var(--h); box-shadow: 0 0 0 1px var(--h), 0 0 18px -4px var(--hg); }
+.obj-card:hover::after { width: 100%; }
+.obj-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 11px; }
+.obj-name { font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 600; color: var(--t1); letter-spacing: 1px; line-height: 1.4; }
+.obj-badge { font-family: 'Space Mono', monospace; font-size: 7.5px; letter-spacing: 1.5px; padding: 2px 6px; white-space: nowrap; flex-shrink: 0; }
+.obj-badge.pha { color: var(--h); border: 1px solid var(--h); background: var(--hd); animation: phaPulse 2.5s ease-in-out infinite; }
+.obj-badge.safe { color: var(--g); border: 1px solid rgba(0,232,144,.35); background: rgba(0,232,144,.05); }
+.obj-badge.comet { color: var(--c); border: 1px solid var(--c); background: var(--cd); }
+.obj-badge.active-c { color: var(--g); border: 1px solid rgba(0,232,144,.35); background: var(--gd); animation: phaPulse 2.5s ease-in-out infinite; }
+.obj-badge.dormant { color: var(--t2); border: 1px solid var(--b2); background: rgba(255,255,255,.02); }
+@keyframes phaPulse { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 8px 1px var(--hg); } }
+.obj-data { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 0; }
+.obj-datum { display: flex; flex-direction: column; gap: 2px; }
+.datum-label { font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 1.5px; color: var(--t2); }
+.datum-val { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--t1); }
+.datum-val .u { font-size: 9px; color: var(--t2); font-weight: 400; }
+.datum-val.c { color: var(--c); }
+.datum-val.h { color: var(--h); }
+.datum-val.g { color: var(--g); }
+.obj-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--b1); font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1.5px; color: var(--t2); }
+.skeleton { background: linear-gradient(90deg, var(--b1) 25%, var(--b2) 50%, var(--b1) 75%); background-size: 200% 100%; animation: shimmer 1.6s infinite; border-radius: 2px; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.empty-state { grid-column: 1/-1; padding: 64px 20px; text-align: center; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 3px; color: var(--t2); }
+.empty-icon { font-size: 32px; margin-bottom: 14px; }
+.empty-err { color: var(--h); margin-bottom: 10px; }
+.empty-hint { color: var(--read); font-size: 10px; letter-spacing: 1.5px; line-height: 2.2; }
+.status-line { display: flex; align-items: center; gap: 7px; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: var(--t2); }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--c); box-shadow: 0 0 7px var(--c); animation: blink 1.8s ease-in-out infinite; flex-shrink: 0; }
+.status-dot.hazard { background: var(--h); box-shadow: 0 0 7px var(--h); }
+.status-dot.calm { background: var(--g); box-shadow: 0 0 7px var(--g); animation: none; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
+.detail-overlay { position: fixed; inset: 0; background: rgba(5,10,18,.65); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 200; display: flex; justify-content: flex-end; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.detail-overlay.open { opacity: 1; pointer-events: all; }
+.detail-panel { width: min(100%, 460px); height: 100%; background: var(--panel); border-left: 1px solid var(--b2); padding: 24px; overflow-y: auto; transform: translateX(100%); transition: transform .25s cubic-bezier(.4,0,.2,1); display: flex; flex-direction: column; gap: 18px; }
+.detail-overlay.open .detail-panel { transform: translateX(0); }
+.detail-close { align-self: flex-end; background: transparent; border: 1px solid var(--b2); color: var(--t2); font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; padding: 5px 10px; cursor: pointer; transition: all .14s; }
+.detail-close:hover { border-color: var(--c); color: var(--c); }
+.detail-name { font-family: 'Orbitron', sans-serif; font-size: 15px; font-weight: 700; color: var(--t1); line-height: 1.35; }
+.detail-sep { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 3px; color: var(--t2); padding-bottom: 6px; border-bottom: 1px solid var(--b1); }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.detail-field { display: flex; flex-direction: column; gap: 4px; }
+.df-label { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; color: var(--t2); }
+.df-value { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; color: var(--t1); }
+.df-value .u { font-size: 9px; color: var(--t2); font-weight: 400; }
+.df-value.c { color: var(--c); }
+.df-value.h { color: var(--h); }
+.df-value.g { color: var(--g); }
+.pha-banner { background: var(--hd); border: 1px solid rgba(255,92,26,.45); padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; }
+.pha-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.pha-text { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--h); line-height: 2; }
+.note-banner { background: var(--cd); border: 1px solid rgba(0,192,255,.3); padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; }
+.note-text { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--c); line-height: 2; }
+.detail-prose { font-family: 'Inter', sans-serif; font-size: 13.5px; color: var(--t1); line-height: 1.85; }
+.detail-link { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--c); text-decoration: none; border: 1px solid var(--c); padding: 8px 14px; display: inline-block; transition: background .14s; align-self: flex-start; }
+.detail-link:hover { background: var(--cd); }
+.gloss { border-bottom: 1px dotted currentColor; cursor: help; }
+.gloss:hover { color: var(--c); border-color: var(--c); }
+.timeline-outer { position: relative; }
+.timeline-wrap { width: 100%; height: 190px; overflow-x: auto; overflow-y: hidden; position: relative; background: var(--card); border-top: 1px solid var(--b1); border-bottom: 1px solid var(--b1); }
+.timeline-zoom-group { position: absolute; top: 8px; right: 8px; z-index: 10; }
+.timeline-track { position: relative; height: 100%; min-width: 100%; }
+.tl-baseline { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--b3); }
+.tl-tick { position: absolute; top: 50%; width: 1px; background: var(--b3); transform: translateY(-50%); }
+.tl-tick-label { position: absolute; top: calc(50% + 16px); font-family: 'Space Mono', monospace; font-size: 9px; color: var(--t2); transform: translateX(-50%); white-space: nowrap; }
+.tl-today { position: absolute; top: 18%; bottom: 18%; width: 2px; background: var(--c); box-shadow: 0 0 8px var(--cg); }
+.tl-today-label { position: absolute; top: 6px; font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 2px; color: var(--c); transform: translateX(-50%); white-space: nowrap; }
+.tl-zone-divider { position: absolute; top: 8%; bottom: 8%; width: 0; border-left: 1px dashed var(--b3); }
+.tl-zone-label { position: absolute; top: 6px; font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1.5px; color: var(--t2); white-space: nowrap; }
+.tl-marker { position: absolute; top: 50%; border-radius: 50%; transform: translate(-50%,-50%); cursor: pointer; transition: transform .15s; }
+.tl-marker:hover, .tl-marker.radar-hover { transform: translate(-50%,-50%) scale(1.6); z-index: 5; }
+.tl-cluster { position: absolute; top: 50%; transform: translate(-50%,-50%); width: 22px; height: 22px; border-radius: 50%; background: rgba(0,192,255,.22); border: 1.5px solid var(--c); color: var(--c); font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .15s; z-index: 4; }
+.tl-cluster:hover, .tl-cluster.radar-hover { transform: translate(-50%,-50%) scale(1.25); box-shadow: 0 0 14px var(--c); }
+.tl-cluster-hot { background: rgba(0,232,144,.22); border-color: var(--g); color: var(--g); }
+.stat-clickable { cursor: pointer; transition: border-color .15s; }
+.stat-clickable:hover { border-color: var(--c); }
+.tl-marker.featured-pulse { animation: phaPulse 2.2s ease-in-out infinite; }
+.home-hero { display: grid; grid-template-columns: 1fr 320px; border-bottom: 1px solid var(--b1); flex: 1 1 auto; min-height: 0; }
+.solar-stage { position: relative; min-height: 0; border-right: 1px solid var(--b1); overflow: hidden; }
+#solarCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+#solarCanvas:active { cursor: grabbing; }
+.solar-toolbar { position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 5; max-width: calc(100% - 24px); }
+.solar-toolbar .filter-btn { background: rgba(7,13,26,.85); backdrop-filter: blur(4px); }
+.solar-zoom-group { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 4px; z-index: 5; }
+.zoom-btn { width: 26px; height: 26px; background: rgba(7,13,26,.85); border: 1px solid var(--b2); color: var(--t2); font-family: 'Space Mono', monospace; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .14s; }
+.zoom-btn:hover { color: var(--c); border-color: var(--c); }
+.solar-date-readout { position: absolute; bottom: 12px; left: 12px; font-family: 'Space Mono', monospace; font-size: 9.5px; letter-spacing: 1.5px; color: var(--t1); background: rgba(7,13,26,.85); border: 1px solid var(--b2); padding: 6px 10px; z-index: 5; }
+.solar-hint { position: absolute; bottom: 12px; right: 12px; font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1px; color: var(--t3); background: rgba(7,13,26,.7); padding: 5px 9px; z-index: 5; }
+.solar-scrub-wrap { position: absolute; bottom: 40px; left: 12px; right: 12px; display: flex; align-items: center; gap: 8px; background: rgba(7,13,26,.85); border: 1px solid var(--b2); padding: 5px 10px; z-index: 5; }
+.solar-scrub-label { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1.5px; color: var(--t2); white-space: nowrap; min-width: 38px; }
+#solarScrub { flex: 1; accent-color: var(--c); cursor: pointer; }
+
+.home-side { padding: 22px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto; min-height: 0; }
+.home-side-block { display: flex; flex-direction: column; gap: 10px; }
+.home-side-title { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 3px; color: var(--t2); }
+.legend-col { display: flex; flex-direction: column; gap: 8px; font-family: 'Space Mono', monospace; font-size: 9.5px; letter-spacing: 1px; color: var(--t1); }
+.legend-col .legend-item { gap: 9px; }
+.layer-toggles { display: flex; gap: 6px; flex-wrap: wrap; }
+.home-quickstats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.qs-card { background: var(--card); border: 1px solid var(--b2); padding: 10px 12px; }
+.qs-value { font-family: 'Orbitron', sans-serif; font-size: 17px; font-weight: 700; color: var(--c); line-height: 1; margin-bottom: 4px; }
+.qs-label { font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 1.5px; color: var(--t2); }
+.home-selected-name { font-family: 'Orbitron', sans-serif; font-size: 12px; color: var(--t1); }
+.home-selected-hint { font-family: 'Space Mono', monospace; font-size: 10.5px; color: var(--read); line-height: 2; }
+
+@media (max-width: 880px) {
+  .hero-section, .home-hero { grid-template-columns: 1fr; }
+  .radar-side, .solar-stage { border-right: none; border-bottom: 1px solid var(--b1); }
+  #panel-home.active { height: auto; min-height: 0; overflow: visible; }
+  .solar-stage { min-height: 380px; }
+}
+@media (max-width: 600px) {
+  header { padding: 12px 16px; }
+  .brand-name { font-size: 13px; letter-spacing: 2px; }
+  .brand-sub { display: none; }
+  .nav-tab { padding: 8px 11px; font-size: 9px; }
+  .radar-side, .stats-side, .list-section, .home-side { padding: 16px; }
+}
+
+footer { border-top: 1px solid var(--b1); padding: 10px 28px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; background: rgba(5,10,18,.6); }
+footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; color: var(--t3); }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: var(--void); }
+::-webkit-scrollbar-thumb { background: var(--b3); }
+::-webkit-scrollbar-thumb:hover { background: var(--c); }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div class="vignette"></div>
+
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">◈</div>
+      <div>
+        <div class="brand-name">SPACE SENTINEL</div>
+        <div class="brand-sub">SOLAR SYSTEM SURVEILLANCE</div>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="home">SOLAR SYSTEM</button>
+      <button class="nav-tab" data-tab="asteroids">ASTEROIDS</button>
+      <button class="nav-tab" data-tab="comets">COMETS</button>
+      <button class="nav-tab" data-tab="closecalls">CLOSE CALLS</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <button class="filter-btn" onclick="showGlossaryAll()">? GLOSSARY</button>
+      <button class="filter-btn" onclick="showAlertSignup()" style="color:var(--g);border-color:var(--g)">🔔 ALERTS</button>
+      <div class="header-date" id="headerDate"></div>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="tab-panel active fade-in" id="panel-home">
+      <div class="home-hero">
+        <div class="solar-stage">
+          <canvas id="solarCanvas"></canvas>
+          <div class="solar-toolbar">
+            <button class="filter-btn active" id="btnPlayPause">⏸ PAUSE</button>
+            <select class="sw-select" id="speedSelect">
+              <option value="1">1 DAY / SEC</option>
+              <option value="7" selected>1 WEEK / SEC</option>
+              <option value="30">1 MONTH / SEC</option>
+              <option value="365">1 YEAR / SEC</option>
+              <option value="1825">5 YEARS / SEC</option>
+            </select>
+            <button class="filter-btn" id="btnToday">TODAY</button>
+            <button class="filter-btn" id="btnResetView">RESET VIEW</button>
+          </div>
+          <div class="solar-zoom-group">
+            <button class="zoom-btn" id="btnZoomIn">+</button>
+            <button class="zoom-btn" id="btnZoomOut">−</button>
+          </div>
+          <div class="solar-scrub-wrap">
+            <span class="solar-scrub-label">SCRUB</span>
+            <input type="range" id="solarScrub" min="-50" max="50" value="0" step="0.1">
+            <span class="solar-scrub-label" id="solarScrubReadout">TODAY</span>
+          </div>
+          <div class="solar-date-readout" id="solarDateReadout">— — —</div>
+          <div class="solar-hint">SCROLL TO ZOOM · DRAG TO PAN · CLICK AN OBJECT</div>
+        </div>
+
+        <div class="home-side">
+          <div class="home-side-block" id="rightNowBlock" style="border-bottom:1px solid var(--b1);padding-bottom:18px;margin-bottom:-4px">
+            <div class="home-side-title">RIGHT NOW</div>
+            <div class="home-selected-hint" id="rightNowText">Loading live counts…</div>
+          </div>
+          <div class="home-side-block">
+            <div class="home-side-title">LEGEND</div>
+            <div class="legend-col">
+              <div class="legend-item"><div class="legend-dot" style="background:#FFD27A;box-shadow:0 0 6px #FFD27A"></div>SUN</div>
+              <div class="legend-item"><div class="legend-dot grey"></div>PLANET</div>
+              <div class="legend-item"><div class="legend-dot orange"></div>ASTEROID</div>
+              <div class="legend-item"><div class="legend-dot cyan"></div>COMET</div>
+              <div class="legend-item"><div class="legend-dot green"></div>SELECTED</div>
+            </div>
+          </div>
+
+          <div class="home-side-block">
+            <div class="home-side-title">LAYERS</div>
+            <div class="layer-toggles">
+              <button class="filter-btn active" data-layer="orbits">ORBITS</button>
+              <button class="filter-btn active" data-layer="asteroids">ASTEROIDS</button>
+              <button class="filter-btn active" data-layer="comets">COMETS</button>
+              <button class="filter-btn active" data-layer="labels">LABELS</button>
+              <button class="filter-btn active" data-layer="live">LIVE</button>
+            </div>
+          </div>
+
+          <div class="home-side-block">
+            <div class="home-side-title">TRACKED OBJECTS</div>
+            <div class="home-quickstats">
+              <div class="qs-card"><div class="qs-value">8</div><div class="qs-label">PLANETS</div></div>
+              <div class="qs-card"><div class="qs-value">6</div><div class="qs-label">ASTEROIDS</div></div>
+              <div class="qs-card"><div class="qs-value">3</div><div class="qs-label">COMETS</div></div>
+              <div class="qs-card"><div class="qs-value">1</div><div class="qs-label">STAR</div></div>
+            </div>
+          </div>
+
+          <div class="home-side-block">
+            <div class="home-side-title">ABOUT THIS VIEW</div>
+            <div class="home-selected-hint">
+              Positions are computed live from real orbital elements using two-body Keplerian propagation — a faithful schematic, not precision navigation data. Distance from the Sun is radially compressed (√ scale) so inner and outer worlds both fit on screen.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <section class="tab-panel" id="panel-asteroids">
+      <section class="hero-section">
+        <div class="radar-side">
+          <div class="eyebrow">PROXIMITY RADAR — 7-DAY SCAN WINDOW</div>
+          <div class="radar-canvas-container">
+            <canvas id="radar-ast"></canvas>
+            <div class="radar-zoom-group"><button class="zoom-btn" id="btnZoomIn-ast">+</button><button class="zoom-btn" id="btnZoomOut-ast">−</button></div>
+            <div class="radar-zoom-label" id="radarZoomLabel-ast">100 LD</div>
+          </div>
+          <div class="radar-legend">
+            <div class="legend-item"><div class="legend-dot cyan"></div>NON-HAZARDOUS</div>
+            <div class="legend-item"><div class="legend-dot orange"></div>PHA</div>
+            <div class="legend-item"><div class="legend-dot moon"></div>MOON ORBIT (1 LD)</div>
+          </div>
+          <div class="status-line"><div class="status-dot" id="statusDot-ast"></div><span id="status-ast">INITIALIZING...</span></div>
+        </div>
+        <div class="stats-side">
+          <div class="eyebrow">7-DAY WINDOW STATISTICS</div>
+          <div class="stats-grid">
+            <div class="stat-card" id="stat-total-ast"><div class="stat-value">—</div><div class="stat-label">OBJECTS TRACKED</div><div class="stat-sub">7-day window</div></div>
+            <div class="stat-card h-card" id="stat-hazardous-ast"><div class="stat-value">—</div><div class="stat-label">POTENTIALLY HAZARDOUS</div><div class="stat-sub">active PHAs</div></div>
+            <div class="stat-card" id="stat-closest-ast"><div class="stat-value">—</div><div class="stat-label">CLOSEST APPROACH</div><div class="stat-sub">lunar distances</div></div>
+            <div class="stat-card" id="stat-fastest-ast"><div class="stat-value">—</div><div class="stat-label">FASTEST OBJECT</div><div class="stat-sub">km/s relative velocity</div></div>
+          </div>
+          <div class="next-card" id="stat-next-ast">
+            <div class="next-card-eyebrow">NEXT CLOSE APPROACH <span style="opacity:.6">· soonest by date</span></div>
+            <div class="next-name">—</div><div class="next-meta">—</div>
+          </div>
+        </div>
+      </section>
+      <section class="list-section">
+        <div class="list-header">
+          <div class="eyebrow" style="margin:0">TRACKED OBJECTS</div>
+          <div class="controls">
+            <button class="filter-btn active" data-filter="all">ALL</button>
+            <button class="filter-btn h-filter" data-filter="hazardous">⚠ PHA ONLY</button>
+            <button class="filter-btn" data-filter="today">TODAY</button>
+            <div class="sort-wrap">SORT:
+              <select class="sw-select" id="sortSelect-ast">
+                <option value="date">DATE</option><option value="distance">DISTANCE</option>
+                <option value="velocity">VELOCITY</option><option value="size">SIZE</option>
+                <option value="magnitude">MAGNITUDE</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="objects-grid" id="objectsGrid-ast"></div>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="panel-comets">
+      <section class="hero-section">
+        <div class="radar-side">
+          <div class="eyebrow">COMET RADAR — DISTANCE FROM EARTH (AU)</div>
+          <div class="radar-canvas-container">
+            <canvas id="radar-com"></canvas>
+            <div class="radar-zoom-group"><button class="zoom-btn" id="btnZoomIn-com">+</button><button class="zoom-btn" id="btnZoomOut-com">−</button></div>
+            <div class="radar-zoom-label" id="radarZoomLabel-com">1.00 AU</div>
+          </div>
+          <div class="radar-legend">
+            <div class="legend-item"><div class="legend-dot cyan"></div>COMET</div>
+            <div class="legend-item"><div class="legend-dot green"></div>NOTABLE PASS (&lt; 0.1 AU)</div>
+          </div>
+          <div class="status-line"><div class="status-dot" id="statusDot-com"></div><span id="status-com">INITIALIZING...</span></div>
+        </div>
+        <div class="stats-side">
+          <div class="eyebrow">CLOSE-APPROACH WINDOW: TODAY → +2 YEARS</div>
+          <div class="stats-grid">
+            <div class="stat-card" id="stat-total-com"><div class="stat-value">—</div><div class="stat-label">COMETS TRACKED</div><div class="stat-sub">≤ 2 AU window</div></div>
+            <div class="stat-card g-card" id="stat-active-com"><div class="stat-value">—</div><div class="stat-label">NOTABLE PASSES</div><div class="stat-sub">within 0.1 AU</div></div>
+            <div class="stat-card" id="stat-closest-com"><div class="stat-value">—</div><div class="stat-label">CLOSEST APPROACH</div><div class="stat-sub">astronomical units</div></div>
+            <div class="stat-card" id="stat-fastest-com"><div class="stat-value">—</div><div class="stat-label">FASTEST OBJECT</div><div class="stat-sub">km/s relative velocity</div></div>
+          </div>
+          <div class="next-card" id="stat-next-com">
+            <div class="next-card-eyebrow">NEXT CLOSE APPROACH <span style="opacity:.6">· soonest by date</span></div>
+            <div class="next-name">—</div><div class="next-meta">—</div>
+          </div>
+        </div>
+      </section>
+      <section class="list-section">
+        <div class="list-header">
+          <div class="eyebrow" style="margin:0">TRACKED COMETS</div>
+          <div class="controls">
+            <button class="filter-btn active" data-filter="all">ALL</button>
+            <button class="filter-btn g-filter" data-filter="notable">☄ NOTABLE ONLY</button>
+            <div class="sort-wrap">SORT:
+              <select class="sw-select" id="sortSelect-com">
+                <option value="date">DATE</option><option value="distance">DISTANCE</option>
+                <option value="velocity">VELOCITY</option><option value="magnitude">MAGNITUDE</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="objects-grid" id="objectsGrid-com"></div>
+      </section>
+    </section>
+
+    <section class="tab-panel" id="panel-closecalls">
+      <section style="padding:24px 28px 0">
+        <div class="list-header">
+          <div class="eyebrow" style="margin:0">EARTH CLOSE-CALL TIMELINE — 1900–2200</div>
+          <div class="controls">
+            <button class="filter-btn" data-ccfilter="all">ALL</button>
+            <button class="filter-btn h-filter" data-ccfilter="asteroid">ASTEROIDS</button>
+            <button class="filter-btn g-filter" data-ccfilter="comet">COMETS</button>
+            <button class="filter-btn g-filter active" data-ccfilter="highlighted">★ HIGHLIGHTED</button>
+            <button class="filter-btn" id="btnCCToday">⟲ TODAY</button>
+          </div>
+        </div>
+        <div class="status-line" style="margin-bottom:10px"><div class="status-dot" id="statusDot-cc"></div><span id="status-cc">INITIALIZING...</span></div>
+      </section>
+      <div class="timeline-outer">
+        <div class="timeline-wrap" id="timelineWrap">
+          <div class="timeline-track" id="timelineTrack">
+            <div id="timelineStructure"></div>
+            <div id="timelineMarkers"></div>
+          </div>
+        </div>
+        <div class="radar-zoom-group timeline-zoom-group">
+          <button class="zoom-btn" id="btnCCZoomIn">+</button>
+          <button class="zoom-btn" id="btnCCZoomOut">−</button>
+          <button class="zoom-btn" id="btnCCZoomFit" style="font-size:8px">FIT</button>
+        </div>
+      </div>
+
+      <section style="padding:12px 28px 0;border-top:1px solid var(--b1)">
+        <div class="eyebrow" style="margin-bottom:12px">📜 RECORDED HISTORY (PRE-1900)</div>
+        <div id="historicalStrip" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      </section>
+      <section class="stats-side" style="padding:20px 28px">
+        <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+          <div class="stat-card" id="stat-total-cc"><div class="stat-value">—</div><div class="stat-label">EVENTS TRACKED</div><div class="stat-sub">1900–2200 + history</div></div>
+          <div class="stat-card g-card" id="stat-highlighted-cc"><div class="stat-value">—</div><div class="stat-label">HIGHLIGHTED</div><div class="stat-sub">PHA + featured</div></div>
+          <div class="stat-card stat-clickable" id="stat-closest-ast-cc"><div class="stat-value">—</div><div class="stat-label">CLOSEST ASTEROID</div><div class="stat-sub">click for details</div></div>
+          <div class="stat-card stat-clickable" id="stat-closest-com-cc"><div class="stat-value">—</div><div class="stat-label">CLOSEST COMET</div><div class="stat-sub">click for details</div></div>
+          <div class="stat-card stat-clickable" id="stat-next-cc-mini"><div class="stat-value">—</div><div class="stat-label">NEXT FEATURED</div><div class="stat-sub">click for details</div></div>
+        </div>
+      </section>
+      <section class="list-section" style="padding-top:0">
+        <div class="list-header" style="flex-wrap:wrap;gap:10px">
+          <div class="eyebrow" style="margin:0">ALL TRACKED EVENTS <span id="ccCardCount" style="color:var(--t2);font-size:8px"></span></div>
+          <div class="controls" style="flex-wrap:wrap;gap:7px">
+            <button class="filter-btn" id="btnCCHighlightedOnly">★ HIGHLIGHTED ONLY</button>
+            <div class="sort-wrap">YEAR:
+              <input id="ccYearFromInput" type="number" placeholder="FROM" min="1900" max="2200"
+                style="width:68px;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:9px;padding:4px 6px">
+              <input id="ccYearToInput" type="number" placeholder="TO" min="1900" max="2200"
+                style="width:68px;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:9px;padding:4px 6px">
+              <button class="zoom-btn" style="font-size:8px;width:auto;padding:0 8px" id="btnCCYearApply">GO</button>
+              <button class="zoom-btn" style="font-size:8px;width:auto;padding:0 8px" id="btnCCYearClear">✕</button>
+            </div>
+            <div class="sort-wrap">SORT:
+              <select class="sw-select" id="sortSelect-cc">
+                <option value="date">DATE</option>
+                <option value="distance">DISTANCE</option>
+                <option value="velocity">VELOCITY</option>
+                <option value="magnitude">MAGNITUDE</option>
+              </select>
+              <button class="zoom-btn" id="btnCCSortDir" style="font-size:11px;width:26px" title="Reverse sort">↑</button>
+            </div>
+          </div>
+        </div>
+        <div class="objects-grid" id="objectsGrid-cc"></div>
+      </section>
+    </section>
+
+  </main>
+
+  <footer>
+    <span id="footerLeft">DATA: NASA NEOWS API · JPL CLOSE-APPROACH DATA API · KEPLERIAN PROPAGATION</span>
+    <span id="footerRight">SPACE SENTINEL</span>
+  </footer>
+
+</div>
+
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-panel" id="detailPanel"></div>
+</div>
+
+<script>
+
+const fmt = (n, d = 1) => (n === null || n === undefined || isNaN(n)) ? '—' : (+n).toFixed(d);
+const dateStr = d => d.toISOString().split('T')[0];
+
+function idToAngle(id) {
+  let h = 2166136261;
+  for (let i = 0; i < id.length; i++) { h ^= id.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return ((h >>> 0) % 62832) / 10000;
+}
+function linToR(value, maxR, zoomMax) { return Math.min(value / zoomMax, 1.05) * maxR; }
+function pickLabelStep(maxVal, steps) { for (const s of steps) if (maxVal <= s.upTo) return s.step; return steps[steps.length-1].step; }
+
+function countUp(el, target, ms) {
+  if (!el) return;
+  const t0 = performance.now();
+  (function tick(now) {
+    const p = Math.min((now - t0) / ms, 1);
+    el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+    if (p < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+
+
+const VIS_TIERS = [
+  { id: 'naked_eye',  maxMag:  6, label: 'Naked eye',           note: 'Potentially visible without equipment under dark skies — rare for asteroids.' },
+  { id: 'binoculars', maxMag: 10, label: 'Binoculars',          note: 'Should be detectable with standard 7×50 or 10×50 binoculars under reasonably dark skies.' },
+  { id: 'telescope',  maxMag: 14, label: 'Backyard telescope',   note: 'Detectable with a 100–200mm aperture telescope under dark skies. Not a visual spectacle, but trackable.' },
+  { id: 'too_faint',  maxMag: 99, label: 'Professional equipment only', note: 'Too faint for casual observers. Would need a large aperture telescope and long-exposure imaging.' },
+];
+
+
+function classifyVisibility({ h, miss_km, type }) {
+  if (h === null || h === undefined || isNaN(h)) return { apparentMag: null, tier: VIS_TIERS[3], isComet: type === 'comet', uncertain: true };
+  const isComet = type === 'comet';
+  const delta_au = miss_km / AU_KM;
+  const r_au = 1.0;           
+  const phase_deg = 45;       
+  const phase_correction = 0.04 * phase_deg;
+  let apparentMag;
+  if (isComet) {
+
+    apparentMag = h + 5 * Math.log10(delta_au) + 10 * Math.log10(r_au);
+  } else {
+    apparentMag = h + 5 * Math.log10(r_au * delta_au) + phase_correction;
+  }
+  const tier = VIS_TIERS.find(t => apparentMag <= t.maxMag) || VIS_TIERS[3];
+  return { apparentMag, tier, isComet, uncertain: isComet };
+}
+
+function visibilityBadgeHTML(params) {
+  const { apparentMag, tier, isComet, uncertain } = classifyVisibility(params);
+  if (apparentMag === null) return '';
+  const mag = apparentMag.toFixed(1);
+  const caveat = uncertain ? '<br><span style="color:var(--t2);font-size:9px">⚠ Comet brightness is inherently uncertain — comets often surprise in both directions.</span>' : '';
+  return `<div class="note-banner" style="background:rgba(0,192,255,.05)">
+    <div class="pha-icon" style="font-size:15px">👁</div>
+    <div class="note-text" style="color:var(--t1)">
+      <strong style="color:var(--c)">${tier.label}</strong> &nbsp;·&nbsp; est. mag ${mag}<br>
+      <span style="color:var(--read)">${tier.note}</span>${caveat}
+    </div>
+  </div>`;
+}
+
+
+let userLocationCache = null;
+let cachedOrbitalElements = {};
+
+function compassDirection(az) {
+  return ['North','North-Northeast','Northeast','East-Northeast','East','East-Southeast','Southeast','South-Southeast','South','South-Southwest','Southwest','West-Southwest','West','West-Northwest','Northwest','North-Northwest'][Math.round(az / 22.5) % 16];
+}
+function fistWidths(alt) {
+  if (alt <= 0) return '';
+  const fists = Math.round(alt / 10);
+  if (fists <= 0) return 'just above the horizon';
+  return `about ${fists} fist-width${fists !== 1 ? 's' : ''} above the horizon`;
+}
+function altDesc(alt) {
+  if (alt < 0) return 'below the horizon — not visible from your location on this date';
+  if (alt < 10) return 'very low — may be hidden by trees, buildings or haze near the horizon';
+  if (alt < 30) return 'low in the sky — find a clear view toward the horizon';
+  if (alt < 60) return 'at a comfortable height — easy to observe';
+  return 'high overhead — excellent viewing angle';
+}
+async function reverseGeocode(lat, lon) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'SpaceSentinel/1.0' } });
+    const data = await res.json();
+    const a = data.address || {};
+    return a.city || a.town || a.village || a.county || a.state || 'your location';
+  } catch { return 'your location'; }
+}
+function getUserLocation() {
+  if (userLocationCache) return Promise.resolve(userLocationCache);
+  return new Promise(resolve => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => { userLocationCache = { lat: pos.coords.latitude, lon: pos.coords.longitude }; resolve(userLocationCache); },
+      () => resolve(null), { timeout: 10000 });
+  });
+}
+function eclipticToEquatorial(xe, ye, ze) {
+  const eps = 23.4393 * Math.PI / 180;
+  return { x: xe, y: ye*Math.cos(eps) - ze*Math.sin(eps), z: ye*Math.sin(eps) + ze*Math.cos(eps) };
+}
+function localSiderealTime(jd, lonDeg) {
+  const gmst = (280.46061837 + 360.98564736629 * (jd - 2451545.0)) % 360;
+  return ((gmst + lonDeg) % 360 + 360) % 360;
+}
+function computeAltAz(raDeg, decDeg, lat, lon, jd) {
+  const ha_r  = ((localSiderealTime(jd, lon) - raDeg + 360) % 360) * Math.PI / 180;
+  const lat_r = lat * Math.PI / 180, dec_r = decDeg * Math.PI / 180;
+  const sinAlt = Math.sin(lat_r)*Math.sin(dec_r) + Math.cos(lat_r)*Math.cos(dec_r)*Math.cos(ha_r);
+  const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180 / Math.PI;
+  const cosAz = (Math.sin(dec_r) - Math.sin(lat_r)*sinAlt) / (Math.cos(lat_r) * Math.cos(Math.abs(alt)*Math.PI/180) || 1e-9);
+  let az = Math.acos(Math.max(-1, Math.min(1, cosAz))) * 180 / Math.PI;
+  if (Math.sin(ha_r) > 0) az = 360 - az;
+  return { alt, az };
+}
+function getObjRaDec(el, jd) {
+  const earthEl = PLANETS.find(p => p.name === 'Earth').el;
+  const obj  = bodyPosition(el, jd);
+  const earth = bodyPosition(earthEl, jd);
+  const geo  = eclipticToEquatorial(obj.x - earth.x, obj.y - earth.y, obj.z - earth.z);
+  const ra   = ((Math.atan2(geo.y, geo.x) * 180/Math.PI) + 360) % 360;
+  const dec  = Math.atan2(geo.z, Math.sqrt(geo.x**2 + geo.y**2)) * 180/Math.PI;
+  return { ra, dec };
+}
+async function computeSkyWindow(el, approachDate, lat, lon) {
+  const base = new Date(approachDate + 'T00:00:00Z').getTime();
+  let best = { alt: -90, az: 0, hour: 12 }, riseH = null, setH = null;
+  let prevAlt = null;
+  for (let h = 0; h <= 24; h++) {
+    const jd = jdFromDate(new Date(base + h*3600000));
+    const { ra, dec } = getObjRaDec(el, jd);
+    const { alt, az } = computeAltAz(ra, dec, lat, lon, jd);
+    if (alt > best.alt) { best = { alt, az, hour: h }; }
+    if (prevAlt !== null) {
+      if (prevAlt < 0 && alt >= 0 && riseH === null) riseH = h;
+      if (prevAlt >= 0 && alt < 0 && setH === null) setH = h;
+    }
+    prevAlt = alt;
+  }
+  return { best, riseH, setH };
+}
+function vfhPanelId(base) { return 'vfh_' + base.replace(/[^a-z0-9]/gi,'_'); }
+function viewFromHereSection(des, approachDate, orbEl) {
+  if (!approachDate || approachDate.startsWith('—')) return '';
+  const pid = vfhPanelId(des + approachDate);
+  const elSafe = orbEl ? encodeURIComponent(JSON.stringify(orbEl)) : '';
+  return `
+    <div>
+      <div class="detail-sep">WHERE TO LOOK</div>
+      <div id="${pid}" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--read);line-height:2">
+        <button class="filter-btn" onclick="doViewFromHere('${pid}','${elSafe}','${approachDate}')">📍 USE MY LOCATION</button>
+        <span style="color:var(--t2);margin-left:10px">Location is used in-memory only — nothing is stored.</span>
+        <div style="margin-top:6px;color:var(--t2);font-size:9px">${orbEl ? 'Precise direction for the night of closest approach.' : 'Orbital elements for this object are still being backfilled. For precise pointing, use <strong style="color:var(--t1)">Stellarium</strong> or <strong style="color:var(--t1)">SkySafari</strong>.'}</div>
+      </div>
+    </div>`;
+}
+async function doViewFromHere(pid, elEncoded, approachDate) {
+  const el = document.getElementById(pid);
+  if (!el) return;
+  el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px">Locating you…</div>`;
+  const loc = await getUserLocation();
+  if (!loc) {
+    el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px;line-height:1.9">
+      Location access denied or unavailable.<br>
+      <details style="margin-top:6px"><summary style="cursor:pointer">Enter coordinates manually</summary>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <input id="${pid}_lat" placeholder="Latitude" type="number" step="0.01" style="flex:1;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px">
+          <input id="${pid}_lon" placeholder="Longitude" type="number" step="0.01" style="flex:1;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px">
+          <button class="zoom-btn" style="width:auto;padding:0 12px" onclick="const la=parseFloat(document.getElementById('${pid}_lat').value),lo=parseFloat(document.getElementById('${pid}_lon').value);if(!isNaN(la)&&!isNaN(lo)){userLocationCache={lat:la,lon:lo};doViewFromHere('${pid}','${elEncoded}','${approachDate}');}">GO</button>
+        </div>
+      </details></div>`;
+    return;
+  }
+  if (!elEncoded) {
+    const place = await reverseGeocode(loc.lat, loc.lon);
+    el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px;line-height:1.9">📍 Near <strong style="color:var(--t1)">${place}</strong><br>Orbital elements for this object aren't cached yet — check back as the weekly pipeline continues backfilling. For precise pointing, use <strong style="color:var(--t1)">Stellarium</strong> or <strong style="color:var(--t1)">SkySafari</strong>.</div>`;
+    return;
+  }
+  try {
+    const orbEl = JSON.parse(decodeURIComponent(elEncoded));
+    el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px">Computing sky position…</div>`;
+    const [{ best, riseH, setH }, place] = await Promise.all([
+      computeSkyWindow(orbEl, approachDate, loc.lat, loc.lon),
+      reverseGeocode(loc.lat, loc.lon),
+    ]);
+    const isVisible = best.alt > 0;
+    const hStr = h => `${h.toString().padStart(2,'0')}:00 local`;
+    const windowStr = riseH !== null && setH !== null
+      ? `Rises around ${hStr(riseH)}, sets around ${hStr(setH)}`
+      : isVisible ? 'Visible throughout the night from your location'
+      : 'Not visible — below the horizon for your location on this date';
+    const dirStr  = isVisible ? compassDirection(best.az) : '—';
+    const fistStr = isVisible ? fistWidths(best.alt) : '';
+    el.innerHTML = `
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--t2);margin-bottom:10px">📍 Near <strong style="color:var(--read)">${place}</strong> · ${approachDate} UTC</div>
+      ${isVisible ? `
+      <div style="background:var(--card);border:1px solid var(--b2);padding:14px 16px;margin-bottom:10px">
+        <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--t2);letter-spacing:2px;margin-bottom:8px">HOW TO FIND IT</div>
+        <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--t1);line-height:2">
+          Face <strong style="color:var(--c);font-size:15px">${dirStr}</strong><br>
+          Look <strong style="color:var(--c)">${fistStr}</strong><br>
+          <span style="color:var(--read);font-size:10px">Tip: a clenched fist held at arm's length covers roughly 10° of sky.</span>
+        </div>
+      </div>` : `<div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--t2);margin-bottom:10px">Not visible from ${place} on this date.</div>`}
+      <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--read);line-height:2">${windowStr}</div>
+      <div style="font-size:9px;color:var(--t2);margin-top:4px">${altDesc(best.alt)}</div>
+      <div style="margin-top:10px;font-size:9px;color:var(--t3)"><span style="cursor:pointer;text-decoration:underline;color:var(--t2)" onclick="userLocationCache=null;doViewFromHere('${pid}','${elEncoded}','${approachDate}')">Use a different location</span></div>`;
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--h);font-family:'Space Mono',monospace;font-size:10px">Sky position calculation failed: ${e.message}</div>`;
+  }
+}
+
+function openDetailPanel(html) {
+  const overlay = document.getElementById('detailOverlay');
+  const panel = document.getElementById('detailPanel');
+  panel.innerHTML = `<button class="detail-close" id="detailCloseBtn">[ CLOSE ]</button>` + html;
+  overlay.classList.add('open');
+  document.getElementById('detailCloseBtn').addEventListener('click', closeDetailPanel);
+}
+function closeDetailPanel() { document.getElementById('detailOverlay')?.classList.remove('open'); }
+document.getElementById('detailOverlay').addEventListener('click', e => { if (e.target.id === 'detailOverlay') closeDetailPanel(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetailPanel(); });
+
+
+function initStarfield() {
+  const canvas = document.getElementById('starfield');
+  const ctx = canvas.getContext('2d');
+  const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+  resize();
+  window.addEventListener('resize', resize);
+  const stars = Array.from({ length: 280 }, () => ({
+    x: Math.random(), y: Math.random(), r: Math.random() * 1.1 + 0.15,
+    base: Math.random() * 0.55 + 0.12, phase: Math.random() * Math.PI * 2, spd: Math.random() * 0.007 + 0.002,
+  }));
+  (function draw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    stars.forEach(s => {
+      s.phase += s.spd;
+      const op = s.base * (0.72 + 0.28 * Math.sin(s.phase));
+      ctx.fillStyle = `rgba(180,215,255,${op})`;
+      ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2); ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  })();
+}
+
+
+const DEG2RAD = Math.PI / 180;
+const GM_SUN = 0.0002959122082855911; 
+const AU_KM = 149597870.7;
+
+function jdFromDate(date) {
+  const Yr = date.getUTCFullYear(), Mo = date.getUTCMonth() + 1;
+  const D = date.getUTCDate() + (date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600) / 24;
+  let y = Yr, m = Mo;
+  if (m <= 2) { y -= 1; m += 12; }
+  const A = Math.floor(y / 100), B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + D + B - 1524.5;
+}
+function jdToDate(jd) {
+  jd += 0.5;
+  const Z = Math.floor(jd), F = jd - Z;
+  let A = Z;
+  if (Z >= 2299161) { const alpha = Math.floor((Z - 1867216.25) / 36524.25); A = Z + 1 + alpha - Math.floor(alpha / 4); }
+  const B = A + 1524, C = Math.floor((B - 122.1) / 365.25), D = Math.floor(365.25 * C), E = Math.floor((B - D) / 30.6001);
+  const day = B - D - Math.floor(30.6001 * E) + F;
+  const month = E < 14 ? E - 1 : E - 13;
+  const year = month > 2 ? C - 4716 : C - 4715;
+  return new Date(Date.UTC(year, month - 1, Math.floor(day)));
+}
+function solveKepler(M, e) {
+  M = ((M % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  let E = e < 0.8 ? M : Math.PI;
+  for (let i = 0; i < 60; i++) {
+    const dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    E -= dE;
+    if (Math.abs(dE) < 1e-9) break;
+  }
+  return E;
+}
+function bodyPosition(el, jd) {
+  const i = el.i * DEG2RAD, om = el.om * DEG2RAD, w = el.w * DEG2RAD;
+  const n = 2 * Math.PI / el.period;
+  const M = n * (jd - el.Tp);
+  const E = solveKepler(M, el.e);
+  const nu = 2 * Math.atan2(Math.sqrt(1 + el.e) * Math.sin(E / 2), Math.sqrt(1 - el.e) * Math.cos(E / 2));
+  const r = el.a * (1 - el.e * Math.cos(E));
+  const xo = r * Math.cos(nu), yo = r * Math.sin(nu);
+  const cosO = Math.cos(om), sinO = Math.sin(om), cosI = Math.cos(i), sinI = Math.sin(i), cosW = Math.cos(w), sinW = Math.sin(w);
+  const x = (cosO * cosW - sinO * sinW * cosI) * xo + (-cosO * sinW - sinO * cosW * cosI) * yo;
+  const y = (sinO * cosW + cosO * sinW * cosI) * xo + (-sinO * sinW + cosO * cosW * cosI) * yo;
+  const z = (sinW * sinI) * xo + (cosW * sinI) * yo;
+  const v = Math.sqrt(GM_SUN * (2 / r - 1 / el.a)) * (AU_KM / 86400);
+  return { x, y, z, r, nu: ((nu * 180 / Math.PI) + 360) % 360, v };
+}
+function planetElements(a, e, i, L, wbar, Om) {
+  const period = 365.25636 * Math.pow(a, 1.5);
+  const M0 = ((L - wbar) % 360 + 360) % 360;
+  const w = ((wbar - Om) % 360 + 360) % 360;
+  const Tp = 2451545.0 - (M0 / 360) * period;
+  return { a, e, i, om: Om, w, Tp, period };
+}
+
+const PLANETS = [
+  { name: 'Mercury', color: '#B7B0A6', r: 3.0, el: planetElements(0.38709893,0.20563069,7.00487,252.25084,77.45645,48.33167),
+    facts: { type:'Terrestrial planet', diameter:'4,879 km', moons:'0', note:'The smallest and fastest planet, Mercury races around the Sun in just 88 days. Daytime surface temperatures swing over 600°C between sunlit and shadowed regions.' } },
+  { name: 'Venus', color: '#E8C77E', r: 4.4, el: planetElements(0.72333199,0.00677323,3.39471,181.97973,131.53298,76.68069),
+    facts: { type:'Terrestrial planet', diameter:'12,104 km', moons:'0', note:'Earth\u2019s near-twin in size but a runaway greenhouse atmosphere makes it the hottest planet, around 465°C at the surface — hot enough to melt lead. It spins backwards relative to most planets.' } },
+  { name: 'Earth', color: '#4D8FD9', r: 4.6, el: planetElements(1.00000011,0.01671022,0.00005,100.46435,102.94719,0.0),
+    facts: { type:'Terrestrial planet', diameter:'12,742 km', moons:'1 (the Moon)', note:'The only world known to harbor life, with liquid water covering most of its surface and a thick, oxygen-rich atmosphere.' } },
+  { name: 'Mars', color: '#C1542C', r: 3.6, el: planetElements(1.52366231,0.09341233,1.85061,355.45332,336.04084,49.57854),
+    facts: { type:'Terrestrial planet', diameter:'6,779 km', moons:'2 (Phobos, Deimos)', note:'Home to Olympus Mons, the tallest known volcano in the solar system, and Valles Marineris, a canyon system that would stretch across the continental United States.' } },
+  { name: 'Jupiter', color: '#D9B38C', r: 9.5, el: planetElements(5.20336301,0.04839266,1.30530,34.40438,14.75385,100.55615),
+    facts: { type:'Gas giant', diameter:'139,820 km', moons:'90+ confirmed', note:'The largest planet by far — more massive than all other planets combined. The Great Red Spot is a storm wider than Earth that has raged for centuries.' } },
+  { name: 'Saturn', color: '#E3D2A0', r: 8.3, el: planetElements(9.53707032,0.05415060,2.48446,49.94432,92.43194,113.71504),
+    facts: { type:'Gas giant', diameter:'116,460 km', moons:'140+ confirmed', note:'Famous for its dazzling ring system made of ice and rock fragments. Its moon Titan has a thick atmosphere and lakes of liquid methane.' } },
+  { name: 'Uranus', color: '#9FE0E0', r: 6.4, el: planetElements(19.19126393,0.04716771,0.76986,313.23218,170.96424,74.22988),
+    facts: { type:'Ice giant', diameter:'50,724 km', moons:'27 confirmed', note:'Tipped over on its side at a 98° axial tilt, likely from an ancient collision — it essentially rolls around the Sun rather than spinning upright.' } },
+  { name: 'Neptune', color: '#5C7FE0', r: 6.2, el: planetElements(30.06896348,0.00858587,1.76917,304.88003,44.97135,131.72169),
+    facts: { type:'Ice giant', diameter:'49,244 km', moons:'14 confirmed', note:'The windiest world known, with supersonic storms clocked near 2,100 km/h. It was the first planet located by mathematical prediction rather than direct observation.' } },
+];
+
+const SMALL_BODIES = [
+  { name: 'Ceres', type: 'asteroid', designation: '1 Ceres', el: { a:2.76718174,e:0.07881745,i:10.58634327,om:80.260148690589,w:73.470461544247,Tp:2459920.0963,period:1681.3377 },
+    facts: { subtitle:'Dwarf planet · Main Asteroid Belt', diameter:'~940 km', discovered:'Giuseppe Piazzi, 1 Jan 1801', note:'The largest object in the asteroid belt and the first asteroid ever discovered. Reclassified as a dwarf planet in 2006. NASA\u2019s Dawn spacecraft orbited Ceres from 2015, revealing bright salt deposits in Occator crater.', link:'https://theskylive.com/ceres-info' } },
+  { name: 'Vesta', type: 'asteroid', designation: '4 Vesta', el: { a:2.36303821,e:0.08875750,i:7.13925798,om:103.75730014935,w:151.59916398802,Tp:2459576.1719,period:1326.7972 },
+    facts: { subtitle:'Main Asteroid Belt', diameter:'~530 km', discovered:'Heinrich Olbers, 29 Mar 1807', note:'One of the most massive asteroids and the brightest, occasionally visible to the naked eye. A largely intact protoplanet with a differentiated rocky crust, mantle, and metallic core. Orbited by NASA\u2019s Dawn spacecraft 2011–2012.', link:'https://theskylive.com/vesta-info' } },
+  { name: 'Pallas', type: 'asteroid', designation: '2 Pallas', el: { a:2.76963168,e:0.23008437,i:34.92703056,om:172.918132705,w:310.86479846644,Tp:2460010.5573,period:1683.5711 },
+    facts: { subtitle:'Main Asteroid Belt', diameter:'~545 km', discovered:'Heinrich Olbers, 28 Mar 1802', note:'Tilted a striking 35° from the plane the other planets orbit in — far more inclined than any other large asteroid — making Pallas a real outlier in the belt.', link:'https://theskylive.com/pallas-info' } },
+  { name: 'Eros', type: 'asteroid', designation: '433 Eros', el: { a:1.45812914,e:0.22278189,i:10.82782330,om:304.28704011911,w:178.92699517952,Tp:2459802.6017,period:643.1206 },
+    facts: { subtitle:'Near-Earth Asteroid (Amor)', diameter:'34 × 11 × 11 km', discovered:'Gustav Witt, 13 Aug 1898', note:'An elongated, peanut-shaped asteroid that made history in 2000 as the first asteroid ever orbited, and then landed on, by a spacecraft — NASA\u2019s NEAR Shoemaker.', link:'https://theskylive.com/eros-info' } },
+  { name: 'Bennu', type: 'asteroid', designation: '101955 Bennu', el: { a:1.12639103,e:0.20374508,i:6.03494377,om:2.0608661956964,w:66.223060840843,Tp:2455439.1419,period:436.6487 },
+    facts: { subtitle:'Near-Earth Asteroid (Apollo) · PHA', diameter:'~490 m', discovered:'LINEAR survey, Sep 1999', note:'A carbon-rich, rubble-pile asteroid and target of NASA\u2019s OSIRIS-REx mission, which collected a surface sample and returned it to Earth in 2023. Tracked closely as a potentially hazardous asteroid, with a small chance of a distant-future close encounter being refined by ongoing observation.', link:'https://theskylive.com/bennu-info' } },
+  { name: 'Apophis', type: 'asteroid', designation: '99942 Apophis', el: { a:0.9225071817,e:0.1915216894,i:3.336751320,om:204.0389272089,w:126.6520518369,Tp:2459101.0394225,period:323.66 },
+    facts: { subtitle:'Near-Earth Asteroid (Aten)', diameter:'~370 m', discovered:'Roy Tucker, David Tholen, Fabrizio Bernardi, Dec 2004', note:'Will pass within about 32,000 km of Earth\u2019s surface on 13 April 2029 — closer than geostationary satellites and visible to the naked eye from parts of the world. Earlier impact-risk scenarios for 2029, 2036, and 2068 have all been fully ruled out by precise tracking.', link:'https://theskylive.com/apophis-info' } },
+
+  { name: 'Halley', type: 'comet', designation: '1P/Halley', el: { a:17.92781774,e:0.96794279,i:162.18787119,om:59.114482936739,w:112.25779200487,Tp:2446470.1489,period:27726.15 },
+    facts: { subtitle:'Halley-type periodic comet', nucleus:'~15 km', discovered:'Recorded since antiquity; orbit computed by Edmond Halley, 1705', note:'The most famous comet in history, returning roughly every 76 years. Its 1986 apparition was visited by a flotilla of spacecraft including ESA\u2019s Giotto. Orbits retrograde, opposite the direction of the planets. Last at perihelion in 1986; next return in 2061.', link:'https://theskylive.com/halley-info' } },
+  { name: 'Encke', type: 'comet', designation: '2P/Encke', el: { a:2.21505186,e:0.84835644,i:11.78098098,om:334.56715974497,w:186.55102755369,Tp:2457822.5639,period:1204.1325 },
+    facts: { subtitle:'Encke-type short-period comet', nucleus:'~4.8 km', discovered:'Pierre Méchain, 1786; orbit computed by Johann Encke, 1819', note:'Has the shortest orbital period of any well-known comet, returning every 3.3 years. Debris shed along its orbit produces the Taurid meteor showers each autumn.', link:'https://theskylive.com/encke-info' } },
+  { name: '67P', type: 'comet', designation: '67P/Churyumov–Gerasimenko', el: { a:3.46224949,e:0.64090813,i:7.04029491,om:50.135573804414,w:12.798249734157,Tp:2457247.5887,period:2353.0761 },
+    facts: { subtitle:'Jupiter-family comet', nucleus:'~4.3 km (bilobed, "rubber duck" shape)', discovered:'Klim Churyumov & Svetlana Gerasimenko, 1969', note:'Target of ESA\u2019s Rosetta mission, which orbited the comet from 2014–2016 and deployed the Philae lander — the first soft landing ever made on a comet nucleus.', link:'https://theskylive.com/67p-info' } },
+];
+
+function computeBodyNow(body, jd) {
+  const pos = bodyPosition(body.el, jd);
+  return Object.assign({}, body, { pos });
+}
+
+const GLOSSARY = {
+  PHA: { term: 'Potentially Hazardous Asteroid (PHA)', def: 'A NASA/JPL classification for an asteroid whose orbit can bring it within 0.05 AU of Earth\u2019s orbit, and which is large enough to matter (roughly 140m or wider). It describes the orbit\u2019s geometry, not an active threat \u2014 the vast majority of cataloged PHAs are well-tracked and pose no danger.' },
+  NEO: { term: 'Near-Earth Object (NEO)', def: 'Any asteroid or comet whose orbit brings it within about 1.3 AU of the Sun \u2014 close enough that it could potentially cross paths with Earth\u2019s orbit.' },
+  LD: { term: 'Lunar Distance (LD)', def: 'The average distance from Earth to the Moon \u2014 about 384,400 km. Used as a more intuitive yardstick than kilometers for nearby asteroid passes.' },
+  AU: { term: 'Astronomical Unit (AU)', def: 'The average distance from Earth to the Sun \u2014 about 149.6 million km. The standard yardstick for distances across the solar system.' },
+  H: { term: 'Absolute Magnitude (H)', def: 'A measure of how intrinsically bright \u2014 and by extension, roughly how large \u2014 an object is, at a fixed standard distance and lighting angle. Lower H means a brighter, typically larger object.' },
+  VINF: { term: 'V-infinity (v\u221E)', def: 'An object\u2019s velocity relative to Earth once it\u2019s far enough away that Earth\u2019s gravity no longer measurably pulls on it \u2014 its baseline interplanetary speed, before Earth\u2019s gravity speeds it up or down on final approach.' },
+  ECC: { term: 'Eccentricity', def: 'How stretched an orbit is, from 0 (a perfect circle) to just under 1 (a very elongated ellipse). Most planets sit near 0; many comets are well above 0.9.' },
+  INC: { term: 'Inclination', def: 'The tilt of an object\u2019s orbit relative to Earth\u2019s orbital plane (the ecliptic), in degrees. 0\u00B0 means the same plane as Earth; values over 90\u00B0 mean the object orbits backwards (retrograde).' },
+  PERI: { term: 'Perihelion', def: 'The closest point an object gets to the Sun during its orbit.' },
+  APHE: { term: 'Aphelion', def: 'The farthest point an object gets from the Sun during its orbit.' },
+  SMA: { term: 'Semi-major Axis', def: 'Half the longest diameter of an elliptical orbit \u2014 essentially an object\u2019s average distance from the Sun.' },
+  PERIOD: { term: 'Orbital Period', def: 'How long an object takes to complete one full orbit of the Sun.' },
+  NOTABLE: { term: 'Notable Pass', def: 'Our own threshold, not an official NASA/JPL classification: a comet passing within 0.1 AU of Earth \u2014 close enough that only a couple dozen comets have ever been observed doing so in recorded history.' },
+  NUCLEUS: { term: 'Comet Nucleus', def: 'The solid, icy core of a comet \u2014 typically a few hundred meters to a few kilometers across. The glowing coma and tail are something else entirely: gas and dust released as the nucleus warms near the Sun.' },
+  MOID: { term: 'MOID (Minimum Orbit Intersection Distance)', def: 'The closest distance between two orbits \u2014 here, an object\u2019s orbit and Earth\u2019s \u2014 regardless of whether the two bodies are actually near that point at the same time. A small MOID is a precondition for PHA status, not a prediction of an actual close pass.' },
+  FEATURED: { term: 'Featured Event', def: 'A small, hand-picked set of historically or scientifically significant close approaches \u2014 famous flybys, notable impacts, landmark comet returns \u2014 layered on top of the automatic PHA-based flagging, since fame and hazard classification don\u2019t always line up.' },
+  IMPACT: { term: 'Impact Event', def: 'An object that actually entered Earth\u2019s atmosphere, rather than passing by. NASA/JPL\u2019s close-approach database specifically excludes confirmed impacts, so these are added here by hand.' },
+};
+function showAlertSignup() {
+  const supabaseReady = CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY;
+  if (!supabaseReady) {
+    openDetailPanel(`
+      <div><div class="detail-name">🔔 Close-Call Alerts</div></div>
+      <div class="detail-prose">Email alerts aren't live yet — the Supabase database needs to be provisioned first. Once the backend is set up, alerts will notify you when an asteroid or comet meets your visibility threshold.</div>
+      <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">Check back soon. When this goes live, you'll be able to set thresholds for naked-eye, binoculars, or telescope-visible objects and receive a digest before any qualifying close approaches.</div></div>`);
+    return;
+  }
+  openDetailPanel(`
+    <div><div class="detail-name">🔔 Close-Call Alerts</div>
+    <div style="margin-top:8px;font-family:'Space Mono',monospace;font-size:10px;color:var(--read);line-height:1.9">Get an email when something interesting is approaching Earth. One digest email per qualifying event — no spam.</div></div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="detail-field">
+        <div class="df-label">EMAIL ADDRESS</div>
+        <input id="alertEmail" type="email" placeholder="you@example.com" style="background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:12px;padding:8px 12px;width:100%;outline:none">
+      </div>
+      <div class="detail-field">
+        <div class="df-label">MINIMUM VISIBILITY</div>
+        <select id="alertTier" style="background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:8px 12px;width:100%;appearance:none">
+          <option value="naked_eye">Naked eye (very rare)</option>
+          <option value="binoculars">Binoculars or better</option>
+          <option value="telescope" selected>Backyard telescope or better</option>
+          <option value="any">Any tracked object (lots of emails)</option>
+        </select>
+      </div>
+      <div class="detail-field">
+        <div class="df-label">OBJECT TYPES</div>
+        <div style="display:flex;gap:12px;font-family:'Space Mono',monospace;font-size:10px;color:var(--read)">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="alertAst" checked> Asteroids</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="alertCom" checked> Comets <span style="color:var(--t2)">(mag est. uncertain)</span></label>
+        </div>
+      </div>
+    </div>
+    <button class="detail-link" style="cursor:pointer;width:100%;text-align:center" onclick="submitAlertSignup()">SUBSCRIBE →</button>
+    <div id="alertSignupMsg" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--t2);display:none"></div>
+    <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">You'll receive a verification email. Unsubscribe at any time via the link in every email — no account needed.</div></div>`);
+}
+async function submitAlertSignup() {
+  const email = document.getElementById('alertEmail')?.value?.trim();
+  const tier  = document.getElementById('alertTier')?.value;
+  const ast   = document.getElementById('alertAst')?.checked;
+  const com   = document.getElementById('alertCom')?.checked;
+  const msg   = document.getElementById('alertSignupMsg');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (msg) { msg.textContent = '⚠ Please enter a valid email address.'; msg.style.display = 'block'; msg.style.color = 'var(--h)'; }
+    return;
+  }
+  if (msg) { msg.textContent = 'Subscribing…'; msg.style.display = 'block'; msg.style.color = 'var(--t2)'; }
+  try {
+    const res = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/subscribers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey':       CONFIG.SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        email,
+        thresholds: { visibility_tier: tier, include_asteroids: ast, include_comets: com, max_dist_ld: null, min_diameter_m: null },
+      }),
+    });
+    if (res.status === 409) {
+      if (msg) { msg.textContent = '✓ This email is already subscribed. Check your inbox to manage your preferences.'; msg.style.color = 'var(--g)'; }
+    } else if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    } else {
+      if (msg) { msg.textContent = '✓ Subscribed! Check your inbox for a verification email.'; msg.style.color = 'var(--g)'; }
+    }
+  } catch (err) {
+    if (msg) { msg.textContent = `⚠ Could not subscribe: ${err.message}`; msg.style.color = 'var(--h)'; }
+  }
+}
+function showGlossaryTerm(key) {
+  const g = GLOSSARY[key];
+  if (!g) return;
+  openDetailPanel(`
+    <div><div class="detail-name">${g.term}</div></div>
+    <div class="detail-prose">${g.def}</div>
+    <button class="detail-link" style="cursor:pointer;background:none" onclick="showGlossaryAll()">\u2190 VIEW ALL TERMS</button>`);
+}
+function showGlossaryAll() {
+  const rows = Object.values(GLOSSARY).map(g => `
+    <div style="padding:12px 0;border-bottom:1px solid var(--b1)">
+      <div class="detail-name" style="font-size:12px">${g.term}</div>
+      <div class="detail-prose" style="margin-top:6px">${g.def}</div>
+    </div>`).join('');
+  openDetailPanel(`<div><div class="detail-name">Glossary</div><div class="detail-prose" style="margin-top:8px">Quick definitions for the terms and abbreviations used throughout Space Sentinel.</div></div><div>${rows}</div>`);
+}
+function gloss(label, key) { return `<span class="gloss" onclick="showGlossaryTerm('${key}')">${label}</span>`; }
+
+
+let activeTab = 'home';
+function switchTab(tab) {
+  if (tab === activeTab) return;
+  const current = document.getElementById('panel-' + activeTab);
+  const next = document.getElementById('panel-' + tab);
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  current.classList.remove('fade-in');
+  activeTab = tab;
+  if (tab === 'home') resizeSolarCanvas();
+  setTimeout(() => {
+    current.classList.remove('active');
+    next.classList.add('active');
+    requestAnimationFrame(() => next.classList.add('fade-in'));
+
+    if (tab === 'asteroids' && !asteroidsLoaded) loadAsteroids();
+    if (tab === 'comets' && !cometsLoaded) loadComets();
+    if (tab === 'closecalls' && !closeCallsLoaded) loadCloseCalls();
+  }, 180);
+}
+document.querySelectorAll('.nav-tab').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+let simTime = Date.now();
+let playing = true;
+let speedDaysPerSec = 7;
+let view = { scale: 1, panX: 0, panY: 0 };
+let isDragging = false, dragStartX = 0, dragStartY = 0, dragStartPan = { x: 0, y: 0 };
+let layerState = { orbits: true, asteroids: true, comets: true, labels: true, live: true };
+let liveCounts = { ast: null, com: null };
+let lastScreenPositions = [];
+let selectedBodyName = null;
+
+const MAX_AU_HOME = 36; 
+
+function resizeSolarCanvas() {
+  const canvas = document.getElementById('solarCanvas');
+  const stage = canvas.parentElement;
+  canvas.width = stage.clientWidth;
+  canvas.height = stage.clientHeight;
+}
+window.addEventListener('resize', () => { if (activeTab === 'home') resizeSolarCanvas(); });
+
+function auToScreen(x, y, W, H) {
+  const baseR = Math.min(W, H) * 0.46;
+  const rAu = Math.sqrt(x * x + y * y);
+  const compressed = rAu === 0 ? 0 : Math.sqrt(rAu / MAX_AU_HOME) * baseR;
+  const ang = Math.atan2(y, x);
+  const px = (compressed * Math.cos(ang)) * view.scale + view.panX;
+  const py = (compressed * Math.sin(ang)) * view.scale + view.panY;
+  return { x: W / 2 + px, y: H / 2 + py };
+}
+
+function drawOrbitPath(ctx, el, W, H, color, dashed) {
+  ctx.beginPath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 0.8;
+  if (dashed) ctx.setLineDash([2, 4]); else ctx.setLineDash([]);
+  const steps = 180;
+  for (let s = 0; s <= steps; s++) {
+    const nu = (s / steps) * 2 * Math.PI;
+    const r = el.a * (1 - el.e * el.e) / (1 + el.e * Math.cos(nu));
+    const xo = r * Math.cos(nu), yo = r * Math.sin(nu);
+    const i = el.i * DEG2RAD, om = el.om * DEG2RAD, w = el.w * DEG2RAD;
+    const cosO = Math.cos(om), sinO = Math.sin(om), cosI = Math.cos(i), sinI = Math.sin(i), cosW = Math.cos(w), sinW = Math.sin(w);
+    const x = (cosO * cosW - sinO * sinW * cosI) * xo + (-cosO * sinW - sinO * cosW * cosI) * yo;
+    const y = (sinO * cosW + cosO * sinW * cosI) * xo + (-sinO * sinW + cosO * cosW * cosI) * yo;
+    const p = auToScreen(x, y, W, H);
+    if (s === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawSolarSystem(ts) {
+  const canvas = document.getElementById('solarCanvas');
+  if (!canvas.width) resizeSolarCanvas();
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  const jd = jdFromDate(new Date(simTime));
+  lastScreenPositions = [];
+
+  if (layerState.orbits) {
+    PLANETS.forEach(p => drawOrbitPath(ctx, p.el, W, H, 'rgba(90,140,200,.16)', false));
+    if (layerState.asteroids) SMALL_BODIES.filter(b => b.type === 'asteroid').forEach(b => drawOrbitPath(ctx, b.el, W, H, 'rgba(255,140,60,.14)', false));
+    if (layerState.comets) SMALL_BODIES.filter(b => b.type === 'comet').forEach(b => drawOrbitPath(ctx, b.el, W, H, 'rgba(190,240,255,.20)', true));
+  }
+
+  const sunP = { x: W / 2 + view.panX, y: H / 2 + view.panY };
+  const sg = ctx.createRadialGradient(sunP.x, sunP.y, 0, sunP.x, sunP.y, 34 * Math.max(view.scale, 0.4));
+  sg.addColorStop(0, 'rgba(255,225,160,.9)');
+  sg.addColorStop(0.25, 'rgba(255,190,90,.35)');
+  sg.addColorStop(1, 'rgba(255,190,90,0)');
+  ctx.fillStyle = sg;
+  ctx.beginPath(); ctx.arc(sunP.x, sunP.y, 34 * Math.max(view.scale, 0.4), 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#FFE8B0';
+  ctx.beginPath(); ctx.arc(sunP.x, sunP.y, Math.max(4, 6 * Math.sqrt(view.scale)), 0, Math.PI * 2); ctx.fill();
+  lastScreenPositions.push({ name: 'Sun', kind: 'sun', sx: sunP.x, sy: sunP.y, hitR: 10 });
+
+  let earthSP = null;
+  PLANETS.forEach(p => {
+    const pos = bodyPosition(p.el, jd);
+    const sp = auToScreen(pos.x, pos.y, W, H);
+    if (p.name === 'Earth') earthSP = sp;
+    const isSel = selectedBodyName === p.name;
+    ctx.shadowColor = p.color; ctx.shadowBlur = isSel ? 14 : 4;
+    ctx.fillStyle = isSel ? '#00E890' : p.color;
+    const rad = Math.max(2.2, p.r * 0.42 * Math.sqrt(Math.max(view.scale, 0.5)));
+    ctx.beginPath(); ctx.arc(sp.x, sp.y, rad, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    if (layerState.labels) {
+      ctx.font = `${Math.max(8, 9)}px 'Space Mono', monospace`;
+      ctx.fillStyle = isSel ? '#00E890' : 'rgba(184,216,248,.65)';
+      ctx.fillText(p.name, sp.x + rad + 4, sp.y + 3);
+    }
+    lastScreenPositions.push({ name: p.name, kind: 'planet', sx: sp.x, sy: sp.y, hitR: rad + 8 });
+  });
+
+  SMALL_BODIES.forEach(b => {
+    if (b.type === 'asteroid' && !layerState.asteroids) return;
+    if (b.type === 'comet' && !layerState.comets) return;
+    const pos = bodyPosition(b.el, jd);
+    const sp = auToScreen(pos.x, pos.y, W, H);
+    const isSel = selectedBodyName === b.name;
+    const color = isSel ? '#00E890' : (b.type === 'comet' ? '#BFEFFF' : '#FF9C4A');
+    ctx.shadowColor = color; ctx.shadowBlur = isSel ? 12 : 5;
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(sp.x, sp.y, isSel ? 4 : 2.6, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    if (layerState.labels && (isSel || view.scale > 1.4)) {
+      ctx.font = `8px 'Space Mono', monospace`;
+      ctx.fillStyle = isSel ? '#00E890' : 'rgba(184,216,248,.5)';
+      ctx.fillText(b.name, sp.x + 6, sp.y + 3);
+    }
+    lastScreenPositions.push({ name: b.name, kind: b.type, sx: sp.x, sy: sp.y, hitR: 9 });
+  });
+
+  if (layerState.live && earthSP && (liveCounts.ast !== null || liveCounts.com !== null)) {
+    const total = (liveCounts.ast || 0) + (liveCounts.com || 0);
+    const pulse = 0.5 + 0.5 * Math.sin(ts * 0.003);
+    const bx = earthSP.x + 16, by = earthSP.y - 16;
+    ctx.beginPath(); ctx.arc(bx, by, 9 + pulse * 4, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(0,232,144,${0.5 - pulse * 0.3})`; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.shadowColor = '#00E890'; ctx.shadowBlur = 8;
+    ctx.fillStyle = '#00E890';
+    ctx.beginPath(); ctx.arc(bx, by, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.font = `7px 'Space Mono', monospace`;
+    ctx.fillStyle = 'rgba(0,232,144,.65)';
+    ctx.fillText('LIVE NEAR-EARTH', bx + 9, by - 3);
+    ctx.font = `9px 'Space Mono', monospace`;
+    ctx.fillStyle = 'rgba(0,232,144,.95)';
+    ctx.fillText(`${total} TRACKED →`, bx + 9, by + 8);
+    lastScreenPositions.push({ name: 'live-badge', kind: 'live-badge', sx: bx, sy: by, hitR: 16 });
+  }
+
+  const d = jdToDate(jd);
+  document.getElementById('solarDateReadout').textContent = d.toUTCString().substring(0, 16).toUpperCase();
+  const scrubEl = document.getElementById('solarScrub');
+  if (scrubEl && document.activeElement !== scrubEl) {
+    const yearsOffset = (simTime - Date.now()) / (365.25 * 86400000);
+    scrubEl.value = Math.max(-50, Math.min(50, yearsOffset));
+  }
+  const scrubReadout = document.getElementById('solarScrubReadout');
+  if (scrubReadout) {
+    const yo = (simTime - Date.now()) / (365.25 * 86400000);
+    scrubReadout.textContent = Math.abs(yo) < 0.05 ? 'TODAY' : `${yo > 0 ? '+' : ''}${yo.toFixed(1)} YR`;
+  }
+
+  if (playing) {
+    const dt = (ts - (drawSolarSystem._last || ts)) / 1000;
+    simTime += dt * speedDaysPerSec * 86400000;
+  }
+  drawSolarSystem._last = ts;
+  requestAnimationFrame(drawSolarSystem);
+}
+
+function findBodyAt(x, y) {
+  let best = null, bestD = Infinity;
+  lastScreenPositions.forEach(p => {
+    const d = Math.hypot(p.sx - x, p.sy - y);
+    if (d < p.hitR && d < bestD) { best = p; bestD = d; }
+  });
+  return best;
+}
+
+function updateRightNowPanel() {
+  const el = document.getElementById('rightNowText');
+  if (!el) return;
+  if (liveCounts.ast === null && liveCounts.com === null) { el.textContent = 'Loading live counts…'; return; }
+  const astN = liveCounts.ast || 0, comN = liveCounts.com || 0;
+  const total = astN + comN;
+  el.innerHTML = `<strong style="color:var(--c)">${total}</strong> near-Earth objects tracked right now — ${astN} asteroids (next 7 days), ${comN} comets (next 2 years).<br><br>Most pose no risk. Hazard-flagged ones get a clear badge wherever they show up. See what's coming up in <span class="gloss" onclick="switchTab('closecalls')">Close Calls →</span>`;
+}
+function showHomeDetail(hit) {
+  if (hit.kind === 'live-badge') {
+    const astN = liveCounts.ast ?? 0, comN = liveCounts.com ?? 0;
+    openDetailPanel(`
+      <div><div class="detail-name">Live Near-Earth Activity</div><div style="margin-top:8px"><span class="obj-badge active-c" style="font-size:8.5px">☄ LIVE FEEDS</span></div></div>
+      <div class="detail-prose">Real-time counts pulled from NASA and JPL just now. These aren\u2019t plotted at their true orbital position here — that needs a full orbit lookup we don\u2019t fetch for every live object — but they\u2019re genuinely tracked in the Asteroids and Comets tabs.</div>
+      <div class="detail-grid">
+        <div class="detail-field"><div class="df-label">ASTEROIDS (7-DAY WINDOW)</div><div class="df-value c">${astN}</div></div>
+        <div class="detail-field"><div class="df-label">COMETS (≤2 AU, 2-YR WINDOW)</div><div class="df-value c">${comN}</div></div>
+      </div>
+      <button class="detail-link" style="cursor:pointer" onclick="closeDetailPanel();switchTab('asteroids')">VIEW ASTEROIDS →</button>
+      <button class="detail-link" style="cursor:pointer" onclick="closeDetailPanel();switchTab('comets')">VIEW COMETS →</button>`);
+    return;
+  }
+  selectedBodyName = hit.name;
+  if (hit.kind === 'sun') {
+    openDetailPanel(`
+      <div><div class="detail-name">The Sun</div><div style="margin-top:8px"><span class="obj-badge safe" style="font-size:8.5px">G-TYPE MAIN-SEQUENCE STAR</span></div></div>
+      <div class="detail-prose">The Sun holds 99.8% of the mass in the solar system and converts about 4 million tonnes of matter into energy every second through nuclear fusion. Light from its surface takes about 8 minutes to reach Earth.</div>
+      <div><div class="detail-sep">KEY FACTS</div>
+        <div class="detail-grid">
+          <div class="detail-field"><div class="df-label">DIAMETER</div><div class="df-value" style="font-size:12px">1,392,700 km</div></div>
+          <div class="detail-field"><div class="df-label">SURFACE TEMP</div><div class="df-value" style="font-size:12px">~5,500°C</div></div>
+          <div class="detail-field"><div class="df-label">AGE</div><div class="df-value" style="font-size:12px">~4.6 billion yrs</div></div>
+          <div class="detail-field"><div class="df-label">TYPE</div><div class="df-value" style="font-size:12px">G2V</div></div>
+        </div>
+      </div>`);
+    return;
+  }
+  if (hit.kind === 'planet') {
+    const p = PLANETS.find(pl => pl.name === hit.name);
+    const jd = jdFromDate(new Date(simTime));
+    const pos = bodyPosition(p.el, jd);
+    openDetailPanel(`
+      <div><div class="detail-name">${p.name}</div><div style="margin-top:8px"><span class="obj-badge safe" style="font-size:8.5px">${p.facts.type.toUpperCase()}</span></div></div>
+      <div class="detail-prose">${p.facts.note}</div>
+      <div><div class="detail-sep">CURRENT POSITION</div>
+        <div class="detail-grid">
+          <div class="detail-field"><div class="df-label">DISTANCE FROM SUN</div><div class="df-value c">${fmt(pos.r,3)}<span class="u"> AU</span></div></div>
+          <div class="detail-field"><div class="df-label">ORBITAL VELOCITY</div><div class="df-value">${fmt(pos.v,2)}<span class="u"> km/s</span></div></div>
+        </div>
+      </div>
+      <div><div class="detail-sep">PLANET DATA</div>
+        <div class="detail-grid">
+          <div class="detail-field"><div class="df-label">DIAMETER</div><div class="df-value" style="font-size:12px">${p.facts.diameter}</div></div>
+          <div class="detail-field"><div class="df-label">MOONS</div><div class="df-value" style="font-size:12px">${p.facts.moons}</div></div>
+          <div class="detail-field"><div class="df-label">ORBITAL PERIOD</div><div class="df-value" style="font-size:12px">${fmt(p.el.period/365.25,2)} yrs</div></div>
+          <div class="detail-field"><div class="df-label">SEMI-MAJOR AXIS</div><div class="df-value" style="font-size:12px">${fmt(p.el.a,3)} AU</div></div>
+        </div>
+      </div>`);
+    return;
+  }
+  const b = SMALL_BODIES.find(x => x.name === hit.name);
+  const jd = jdFromDate(new Date(simTime));
+  const pos = bodyPosition(b.el, jd);
+  const q = b.el.a * (1 - b.el.e);
+  const Q = b.el.a * (1 + b.el.e);
+  const isComet = b.type === 'comet';
+  openDetailPanel(`
+    <div><div class="detail-name">${b.name}</div><div style="margin-top:8px"><span class="obj-badge safe" style="font-size:8.5px">${b.facts.subtitle.toUpperCase()}</span></div></div>
+    <div class="detail-prose">${b.facts.note}</div>
+    <div><div class="detail-sep">CURRENT POSITION</div>
+      <div class="detail-grid">
+        <div class="detail-field"><div class="df-label">DISTANCE FROM SUN</div><div class="df-value c">${fmt(pos.r,3)}<span class="u"> AU</span></div></div>
+        <div class="detail-field"><div class="df-label">VELOCITY</div><div class="df-value">${fmt(pos.v,2)}<span class="u"> km/s</span></div></div>
+      </div>
+    </div>
+    <div><div class="detail-sep">ORBITAL ELEMENTS</div>
+      <div class="detail-grid">
+        <div class="detail-field"><div class="df-label">${gloss('ORBITAL PERIOD','PERIOD')}</div><div class="df-value" style="font-size:12px">${fmt(b.el.period/365.25,2)} yrs</div></div>
+        <div class="detail-field"><div class="df-label">${gloss('ECCENTRICITY','ECC')}</div><div class="df-value" style="font-size:12px">${fmt(b.el.e,3)}</div></div>
+        <div class="detail-field"><div class="df-label">${gloss('PERIHELION','PERI')}</div><div class="df-value" style="font-size:12px">${fmt(q,3)} AU</div></div>
+        <div class="detail-field"><div class="df-label">${gloss('APHELION','APHE')}</div><div class="df-value" style="font-size:12px">${fmt(Q,3)} AU</div></div>
+        <div class="detail-field"><div class="df-label">${gloss('INCLINATION','INC')}</div><div class="df-value" style="font-size:12px">${fmt(b.el.i,1)}°</div></div>
+        <div class="detail-field"><div class="df-label">${isComet ? 'NUCLEUS' : 'DIAMETER'}</div><div class="df-value" style="font-size:12px">${isComet ? b.facts.nucleus : b.facts.diameter}</div></div>
+      </div>
+    </div>
+    <div class="detail-prose" style="opacity:.7;font-size:11px">Discovered: ${b.facts.discovered}</div>
+    ${viewFromHereSection(b.name, new Date(simTime).toISOString().slice(0,10), b.el)}
+    <a href="${b.facts.link}" target="_blank" rel="noopener noreferrer" class="detail-link">VIEW LIVE DATA ON THESKYLIVE →</a>`);
+}
+
+function initHomeInteractions() {
+  const canvas = document.getElementById('solarCanvas');
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.12 : 1/1.12;
+    const newScale = Math.min(12, Math.max(0.4, view.scale * factor));
+    view.panX = (mx - canvas.width/2) - ((mx - canvas.width/2) - view.panX) * (newScale/view.scale);
+    view.panY = my - (my - view.panY) * (newScale / view.scale);
+    view.scale = newScale;
+  }, { passive: false });
+
+  canvas.addEventListener('pointerdown', e => {
+    isDragging = false;
+    dragStartX = e.clientX; dragStartY = e.clientY;
+    dragStartPan = { x: view.panX, y: view.panY };
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (e.buttons !== 1) return;
+    const dx = e.clientX - dragStartX, dy = e.clientY - dragStartY;
+    if (Math.hypot(dx, dy) > 3) isDragging = true;
+    if (isDragging) { view.panX = dragStartPan.x + dx; view.panY = dragStartPan.y + dy; }
+  });
+  canvas.addEventListener('pointerup', e => {
+    if (!isDragging) {
+      const rect = canvas.getBoundingClientRect();
+      const hit = findBodyAt(e.clientX - rect.left, e.clientY - rect.top);
+      if (hit) showHomeDetail(hit);
+    }
+    isDragging = false;
+  });
+
+  document.getElementById('btnPlayPause').addEventListener('click', function () {
+    playing = !playing;
+    this.textContent = playing ? '⏸ PAUSE' : '▶ PLAY';
+    this.classList.toggle('active', playing);
+  });
+  document.getElementById('speedSelect').addEventListener('change', function () { speedDaysPerSec = +this.value; });
+  document.getElementById('btnToday').addEventListener('click', () => { simTime = Date.now(); });
+  const scrubEl = document.getElementById('solarScrub');
+  if (scrubEl) {
+    scrubEl.addEventListener('input', function () {
+      playing = false;
+      document.getElementById('btnPlayPause').textContent = '▶ PLAY';
+      document.getElementById('btnPlayPause').classList.remove('active');
+      simTime = Date.now() + parseFloat(this.value) * 365.25 * 86400000;
+    });
+  }
+  document.getElementById('btnResetView').addEventListener('click', () => { view = { scale: 1, panX: 0, panY: 0 }; });
+  document.getElementById('btnZoomIn').addEventListener('click', () => { view.scale = Math.min(12, view.scale * 1.3); });
+  document.getElementById('btnZoomOut').addEventListener('click', () => { view.scale = Math.max(0.4, view.scale / 1.3); });
+
+  document.querySelectorAll('[data-layer]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const layer = btn.dataset.layer;
+      layerState[layer] = !layerState[layer];
+      btn.classList.toggle('active', layerState[layer]);
+    });
+  });
+}
+
+
+const CONFIG = {
+
+  ASTEROIDS_CACHE:    'data/asteroids.json',
+  ASTEROIDS_LIVE_URL: 'https://api.nasa.gov/neo/rest/v1/feed',
+  ASTEROIDS_KEY:      'DEMO_KEY',        
+
+  CLOSE_CALLS_URL:    'data/close-calls-events.json',
+  ORBITAL_ELEMENTS_URL: 'data/orbital-elements.json',
+
+  JPL_CAD_URL:        'https://ssd-api.jpl.nasa.gov/cad.api',
+
+  SUPABASE_URL:       '',
+  SUPABASE_ANON_KEY:  '',
+};
+let allAsteroids = [];
+let asteroidsLoaded = false;
+let hoveredAstId = null;
+let lastAstRadarPositions = [];
+let astZoomLD = 100;
+let astFilter = 'all', astSort = 'date';
+
+function setAstStatus(text, hazard) {
+  document.getElementById('status-ast').textContent = text;
+  document.getElementById('statusDot-ast').className = 'status-dot' + (hazard ? ' hazard' : '');
+}
+
+async function loadAsteroids() {
+  asteroidsLoaded = true;
+  setAstStatus('LOADING...');
+  renderAstSkeletons();
+  try {
+
+    let records, source;
+    const cacheRes = await fetch(CONFIG.ASTEROIDS_CACHE);
+    if (cacheRes.ok) {
+      const cached = await cacheRes.json();
+      records = (cached.asteroids || []).map(r => ({
+        id: r.id, name: r.name, date: r.date,
+        vel_kms: r.vel_kms, miss_ld: r.miss_ld, miss_km: r.miss_km,
+        diam_min: r.diam_min, diam_max: r.diam_max, diam_avg: r.diam_avg,
+        hazardous: r.hazardous, magnitude: r.magnitude, url: r.url,
+        _angle: idToAngle(r.id), _lastPing: 0,
+      }));
+      source = `cached · ${(cached.generated || '').slice(0, 10)}`;
+    } else {
+      const start = dateStr(new Date());
+      const end   = dateStr(new Date(Date.now() + 7 * 86400000));
+      const url   = `${CONFIG.ASTEROIDS_LIVE_URL}?start_date=${start}&end_date=${end}&api_key=${CONFIG.ASTEROIDS_KEY}`;
+      const res   = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data  = await res.json();
+      if (data.error) throw new Error(data.error.message || 'API error');
+      records = processNEOs(data);
+      records.forEach(o => { o._angle = idToAngle(o.id); o._lastPing = 0; });
+      source = 'live (cache not ready)';
+    }
+    allAsteroids = records;
+    liveCounts.ast = allAsteroids.length;
+    updateRightNowPanel();
+    renderAstStats(allAsteroids);
+    applyAstFilterSort();
+    const hasPHA = allAsteroids.some(o => o.hazardous);
+    setAstStatus(`SIGNAL ACQUIRED · ${source}`);
+    if (hasPHA) { setTimeout(() => setAstStatus('⚠ PHA DETECTED', true), 1400); setTimeout(() => setAstStatus(`SIGNAL ACQUIRED · ${source}`, false), 5000); }
+  } catch (err) {
+    console.error('Asteroid data:', err);
+    liveCounts.ast = 0;
+    updateRightNowPanel();
+    setAstStatus('SIGNAL LOST', true);
+    renderAstError(err.message);
+  }
+}
+function processNEOs(data) {
+  const out = [];
+  for (const neos of Object.values(data.near_earth_objects)) {
+    for (const neo of neos) {
+      const app = neo.close_approach_data?.[0];
+      if (!app) continue;
+      const dm = neo.estimated_diameter?.meters ?? {};
+      const dMin = dm.estimated_diameter_min ?? 0, dMax = dm.estimated_diameter_max ?? 0;
+      out.push({ id: neo.id, name: neo.name.replace(/[()]/g, '').trim(), date: app.close_approach_date,
+        vel_kms: +app.relative_velocity.kilometers_per_second, miss_ld: +app.miss_distance.lunar, miss_km: +app.miss_distance.kilometers,
+        diam_min: dMin, diam_max: dMax, diam_avg: (dMin + dMax) / 2, hazardous: neo.is_potentially_hazardous_asteroid,
+        magnitude: neo.absolute_magnitude_h, url: neo.nasa_jpl_url, _angle: 0, _lastPing: 0 });
+    }
+  }
+  return out.sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+function renderAstStats(objs) {
+  const total = objs.length, hazCount = objs.filter(o => o.hazardous).length;
+  const closest = objs.length ? Math.min(...objs.map(o => o.miss_ld)) : null;
+  const fastest = objs.length ? Math.max(...objs.map(o => o.vel_kms)) : null;
+  const next = [...objs].sort((a, b) => (new Date(a.date) - new Date(b.date)) || (a.miss_ld - b.miss_ld))[0];
+  countUp(document.querySelector('#stat-total-ast .stat-value'), total, 700);
+  countUp(document.querySelector('#stat-hazardous-ast .stat-value'), hazCount, 700);
+  const cEl = document.querySelector('#stat-closest-ast .stat-value'); if (cEl && closest !== null) cEl.textContent = fmt(closest, 2);
+  const fEl = document.querySelector('#stat-fastest-ast .stat-value'); if (fEl && fastest !== null) fEl.textContent = fmt(fastest, 1);
+  const nCard = document.getElementById('stat-next-ast');
+  if (nCard && next) {
+    nCard.querySelector('.next-name').textContent = next.name;
+    nCard.querySelector('.next-meta').innerHTML = `${next.date} UTC<br>${fmt(next.miss_ld,2)} LD &nbsp;·&nbsp; ${fmt(next.vel_kms,1)} km/s` + (next.hazardous ? ' &nbsp;·&nbsp; <span style="color:var(--h)">⚠ PHA</span>' : '');
+  }
+}
+function applyAstFilterSort() {
+  const today = dateStr(new Date());
+  let result = [...allAsteroids];
+  if (astFilter === 'hazardous') result = result.filter(o => o.hazardous);
+  if (astFilter === 'today') result = result.filter(o => o.date === today);
+  if (astSort === 'date') result.sort((a,b) => new Date(a.date)-new Date(b.date));
+  if (astSort === 'distance') result.sort((a,b) => a.miss_ld-b.miss_ld);
+  if (astSort === 'velocity') result.sort((a,b) => b.vel_kms-a.vel_kms);
+  if (astSort === 'size') result.sort((a,b) => b.diam_avg-a.diam_avg);
+  if (astSort === 'magnitude') result.sort((a,b) => (a.magnitude??99)-(b.magnitude??99));
+  renderAstObjects(result);
+}
+function renderAstObjects(objs) {
+  const grid = document.getElementById('objectsGrid-ast');
+  if (!objs.length) { grid.innerHTML = `<div class="empty-state"><div>NO OBJECTS MATCH CURRENT FILTERS</div></div>`; return; }
+  grid.innerHTML = objs.map(o => `
+    <div class="obj-card ${o.hazardous ? 'pha' : ''}" data-id="${o.id}">
+      <div class="obj-top"><div class="obj-name">${o.name}</div><div class="obj-badge ${o.hazardous?'pha':'safe'}" ${o.hazardous?`onclick="event.stopPropagation();showGlossaryTerm('PHA')"`:''}>${o.hazardous?'⚠ PHA':'✓ SAFE'}</div></div>
+      <div class="obj-data">
+        <div class="obj-datum"><div class="datum-label">MISS DISTANCE</div><div class="datum-val ${o.hazardous?'h':'c'}">${fmt(o.miss_ld,2)}<span class="u"> LD</span></div></div>
+        <div class="obj-datum"><div class="datum-label">VELOCITY</div><div class="datum-val">${fmt(o.vel_kms,1)}<span class="u"> km/s</span></div></div>
+        <div class="obj-datum"><div class="datum-label">EST. DIAMETER</div><div class="datum-val">${Math.round(o.diam_avg)}<span class="u"> m</span></div></div>
+        <div class="obj-datum"><div class="datum-label">MAGNITUDE</div><div class="datum-val">${fmt(o.magnitude,1)}<span class="u"> H</span></div></div>
+      </div>
+      <div class="obj-footer">APPROACH: ${o.date}</div>
+    </div>`).join('');
+  grid.querySelectorAll('.obj-card').forEach(card => {
+    card.addEventListener('click', () => { const obj = allAsteroids.find(o => o.id === card.dataset.id); if (obj) showAstDetail(obj); });
+    card.addEventListener('mouseenter', () => { hoveredAstId = card.dataset.id; });
+    card.addEventListener('mouseleave', () => { if (hoveredAstId === card.dataset.id) hoveredAstId = null; });
+  });
+}
+function renderAstSkeletons() {
+  const grid = document.getElementById('objectsGrid-ast');
+  grid.innerHTML = Array(9).fill(0).map(() => `
+    <div class="obj-card" style="pointer-events:none;cursor:default">
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:12px"><div class="skeleton" style="height:13px;flex:1"></div><div class="skeleton" style="height:13px;width:50px"></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${Array(4).fill('<div class="skeleton" style="height:38px"></div>').join('')}</div>
+    </div>`).join('');
+}
+function renderAstError(msg) {
+  document.getElementById('objectsGrid-ast').innerHTML = `
+    <div class="empty-state"><div class="empty-icon">⚠</div><div class="empty-err">SIGNAL LOST</div>
+      <div class="empty-hint">${msg || 'NASA NeoWs API unavailable'}<br>DEMO_KEY allows 30 req/hr · 50 req/day<br>Get a free key at <span style="color:var(--c)">api.nasa.gov</span> · Refresh to retry</div></div>`;
+}
+function showAstDetail(obj) {
+  const missKm = Math.round(obj.miss_km).toLocaleString();
+  const velKmh = Math.round(obj.vel_kms * 3600).toLocaleString();
+  const diamFmt = `${Math.round(obj.diam_min)}–${Math.round(obj.diam_max)} m`;
+  openDetailPanel(`
+    <div><div class="detail-name">${obj.name}</div><div style="margin-top:8px"><span class="obj-badge ${obj.hazardous?'pha':'safe'}" style="font-size:8.5px">${obj.hazardous?'⚠ POTENTIALLY HAZARDOUS ASTEROID':'✓ NON-HAZARDOUS OBJECT'}</span></div></div>
+    ${obj.hazardous ? `<div class="pha-banner"><div class="pha-icon">⚠</div><div class="pha-text">Classified as a Potentially Hazardous Asteroid by NASA/JPL. PHAs have orbits that pass within 0.05 AU of Earth and absolute magnitude H ≤ 22.</div></div>` : ''}
+    <div><div class="detail-sep">CLOSE APPROACH DATA</div><div class="detail-grid">
+      <div class="detail-field"><div class="df-label">DATE</div><div class="df-value" style="font-size:13px">${obj.date}</div></div>
+      <div class="detail-field"><div class="df-label">MISS DISTANCE</div><div class="df-value ${obj.hazardous?'h':'c'}">${fmt(obj.miss_ld,4)}<span class="u"> LD</span></div></div>
+      <div class="detail-field"><div class="df-label">MISS DIST (KM)</div><div class="df-value" style="font-size:11px">${missKm}<span class="u"> km</span></div></div>
+      <div class="detail-field"><div class="df-label">VELOCITY</div><div class="df-value">${fmt(obj.vel_kms,3)}<span class="u"> km/s</span></div></div>
+    </div></div>
+    <div><div class="detail-sep">PHYSICAL PROPERTIES</div><div class="detail-grid">
+      <div class="detail-field"><div class="df-label">EST. DIAMETER</div><div class="df-value" style="font-size:12px">${diamFmt}</div></div>
+      <div class="detail-field"><div class="df-label">ABS. MAGNITUDE</div><div class="df-value">${fmt(obj.magnitude,1)}<span class="u"> H</span></div></div>
+      <div class="detail-field"><div class="df-label">VELOCITY (km/h)</div><div class="df-value" style="font-size:11px">${velKmh}<span class="u"> km/h</span></div></div>
+      <div class="detail-field"><div class="df-label">NASA JPL ID</div><div class="df-value" style="font-size:11px">${obj.id}</div></div>
+    </div></div>
+    ${visibilityBadgeHTML({ h: obj.magnitude, miss_km: obj.miss_km, type: 'asteroid' })}
+    ${viewFromHereSection(obj.id, obj.date, cachedOrbitalElements[obj.id] || null)}
+    <a href="${obj.url}" target="_blank" rel="noopener noreferrer" class="detail-link">VIEW IN NASA JPL DATABASE →</a>`);
+}
+function initRadarAst() {
+  const container = document.querySelector('#panel-asteroids .radar-canvas-container');
+  const canvas = document.getElementById('radar-ast');
+  const zoomLabel = document.getElementById('radarZoomLabel-ast');
+  const resize = () => { const sz = container.offsetWidth; canvas.width = sz; canvas.height = sz; };
+  resize();
+  new ResizeObserver(resize).observe(container);
+
+  function setAstZoom(v) { astZoomLD = Math.min(200, Math.max(20, v)); if (zoomLabel) zoomLabel.textContent = `${astZoomLD} LD`; }
+  setAstZoom(astZoomLD);
+  document.getElementById('btnZoomIn-ast').addEventListener('click', () => setAstZoom(astZoomLD - 20));
+  document.getElementById('btnZoomOut-ast').addEventListener('click', () => setAstZoom(astZoomLD + 20));
+  canvas.addEventListener('wheel', e => { e.preventDefault(); setAstZoom(astZoomLD * (e.deltaY < 0 ? 0.9 : 1.111)); }, { passive: false });
+
+  function setAstHover(id) {
+    if (id === hoveredAstId) return;
+    if (hoveredAstId) { const prev = document.querySelector(`#panel-asteroids .obj-card[data-id="${CSS.escape(hoveredAstId)}"]`); prev?.classList.remove('radar-hover'); }
+    hoveredAstId = id;
+    if (hoveredAstId) { const cur = document.querySelector(`#panel-asteroids .obj-card[data-id="${CSS.escape(hoveredAstId)}"]`); cur?.classList.add('radar-hover'); }
+  }
+  canvas.addEventListener('pointermove', e => {
+    const rect = canvas.getBoundingClientRect(), mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    let found = null;
+    lastAstRadarPositions.forEach(p => { if (Math.hypot(p.x - mx, p.y - my) < 10) found = p.id; });
+    setAstHover(found);
+    canvas.style.cursor = found ? 'pointer' : 'default';
+  });
+  canvas.addEventListener('pointerleave', () => setAstHover(null));
+
+  (function draw(ts) {
+    if (activeTab !== 'asteroids') { requestAnimationFrame(draw); return; }
+    const ctx = canvas.getContext('2d'), W = canvas.width, H = canvas.height, cx = W/2, cy = H/2, maxR = Math.min(W,H)*0.46;
+    ctx.clearRect(0,0,W,H);
+    ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,maxR,0,Math.PI*2); ctx.clip();
+    const bg = ctx.createRadialGradient(cx,cy,0,cx,cy,maxR); bg.addColorStop(0,'#0A1828'); bg.addColorStop(1,'#020810');
+    ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+    const fsz = Math.max(7, W*0.016); ctx.font = `${fsz}px 'Space Mono', monospace`; ctx.textAlign='left';
+    const labelStep = pickLabelStep(astZoomLD, [{upTo:40,step:10},{upTo:100,step:20},{upTo:200,step:50}]);
+    const numRings = Math.floor(astZoomLD / 10);
+    for (let i=1;i<=numRings;i++){ const ld=i*10, r=linToR(ld,maxR,astZoomLD);
+      ctx.strokeStyle='rgba(0,192,255,.09)'; ctx.lineWidth=0.5; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+      if (ld % labelStep === 0) { ctx.fillStyle='rgba(0,192,255,.22)'; ctx.fillText(`${ld} LD`, cx+r+2, cy-2); }
+    }
+    [0,45,90,135].forEach(deg=>{ const rad=deg*Math.PI/180; ctx.strokeStyle='rgba(0,192,255,.05)'; ctx.lineWidth=0.5; ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(rad)*maxR, cy+Math.sin(rad)*maxR); ctx.lineTo(cx-Math.cos(rad)*maxR, cy-Math.sin(rad)*maxR); ctx.stroke(); });
+    const sweep=(ts*0.0004)%(Math.PI*2), sweepSpan=Math.PI*0.45, steps=48;
+    for (let i=0;i<steps;i++){ const t=i/steps; const a1=sweep-sweepSpan*(1-t); const a2=sweep-sweepSpan*(1-(i+1)/steps);
+      ctx.fillStyle=`rgba(0,192,255,${t*0.3})`; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,maxR,a1,a2); ctx.closePath(); ctx.fill(); }
+    ctx.strokeStyle='rgba(0,200,255,.88)'; ctx.lineWidth=1.5; ctx.shadowColor='#00C0FF'; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(sweep)*maxR, cy+Math.sin(sweep)*maxR); ctx.stroke(); ctx.shadowBlur=0;
+    const moonR=linToR(1,maxR,astZoomLD); ctx.strokeStyle='rgba(90,120,152,.45)'; ctx.lineWidth=0.8; ctx.setLineDash([3,7]);
+    ctx.beginPath(); ctx.arc(cx,cy,moonR,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    lastAstRadarPositions = [];
+    allAsteroids.forEach(obj=>{ const ang=obj._angle, r=linToR(obj.miss_ld,maxR,astZoomLD), x=cx+Math.cos(ang)*r, y=cy+Math.sin(ang)*r;
+      lastAstRadarPositions.push({ id: obj.id, x, y });
+      let diff=Math.abs(sweep-ang); if(diff>Math.PI) diff=Math.PI*2-diff;
+      const ping=Math.max(0,1-diff/(Math.PI*0.1)); if(ping>0.5) obj._lastPing=ts;
+      const echo=Math.max(0,1-(ts-obj._lastPing)/2500);
+      const isHover = hoveredAstId === obj.id;
+      const rgb=obj.hazardous?'255,92,26':'0,192,255'; const maxEff=Math.max(ping,echo,isHover?1:0);
+      if(echo>0.02){ ctx.fillStyle=`rgba(${rgb},${echo*0.22})`; ctx.beginPath(); ctx.arc(x,y,3+echo*10,0,Math.PI*2); ctx.fill(); }
+      if(ping>0){ ctx.fillStyle=`rgba(${rgb},${ping*0.3})`; ctx.beginPath(); ctx.arc(x,y,4+ping*14,0,Math.PI*2); ctx.fill(); }
+      if (isHover) { ctx.strokeStyle = `rgba(${rgb},.9)`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(x,y,8,0,Math.PI*2); ctx.stroke(); }
+      ctx.shadowColor=`rgb(${rgb})`; ctx.shadowBlur=isHover?16:maxEff*12; ctx.fillStyle=`rgba(${rgb},${isHover?1:0.65+maxEff*0.35})`;
+      ctx.beginPath(); ctx.arc(x,y,isHover?4.4:(2+(obj.hazardous?0.5:0)),0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; });
+    ctx.restore();
+    const earthR=Math.max(5, W*0.013);
+    const eg=ctx.createRadialGradient(cx,cy,0,cx,cy,earthR*3.2); eg.addColorStop(0,'rgba(28,75,180,.35)'); eg.addColorStop(1,'rgba(28,75,180,0)');
+    ctx.fillStyle=eg; ctx.beginPath(); ctx.arc(cx,cy,earthR*3.2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#183C7A'; ctx.beginPath(); ctx.arc(cx,cy,earthR,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#3A7CC8'; ctx.beginPath(); ctx.arc(cx-earthR*0.18,cy-earthR*0.12,earthR*0.52,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='rgba(0,192,255,.55)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,earthR,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle='rgba(0,192,255,.18)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,maxR,0,Math.PI*2); ctx.stroke();
+    requestAnimationFrame(draw);
+  })();
+}
+function initAstEvents() {
+  document.querySelectorAll('#panel-asteroids .filter-btn').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#panel-asteroids .filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); astFilter = btn.dataset.filter; applyAstFilterSort();
+  }));
+  document.getElementById('sortSelect-ast').addEventListener('change', function(){ astSort=this.value; applyAstFilterSort(); });
+}
+
+const CAD_URL = CONFIG.JPL_CAD_URL;
+let comFilter = 'all', comSort = 'date';
+let allComets = [];
+let cometsLoaded = false;
+let hoveredComId = null;
+let lastComRadarPositions = [];
+let comZoomAU = 1;
+
+function setComStatus(text, hazard) {
+  document.getElementById('status-com').textContent = text;
+  document.getElementById('statusDot-com').className = 'status-dot' + (hazard ? ' hazard' : '');
+}
+const CLOSE_CALL_DATA_URL = CONFIG.CLOSE_CALLS_URL;
+const ORBITAL_ELEMENTS_URL = CONFIG.ORBITAL_ELEMENTS_URL;
+let cachedEventsData = null;
+async function fetchCachedEvents() {
+  if (cachedEventsData) return cachedEventsData;
+  const res = await fetch(CLOSE_CALL_DATA_URL);
+  if (!res.ok) throw new Error(res.status === 404 ? 'PIPELINE_NOT_RUN' : `HTTP ${res.status}`);
+  cachedEventsData = await res.json();
+  return cachedEventsData;
+}
+async function fetchCachedElements() {
+  try {
+    const res = await fetch(ORBITAL_ELEMENTS_URL);
+    if (!res.ok) return {};
+    const data = await res.json();
+    return data.elements || {};
+  } catch (err) {
+    console.warn('Orbital elements cache unavailable yet:', err.message);
+    return {};
+  }
+}
+
+async function loadComets() {
+  cometsLoaded = true;
+  setComStatus('LOADING...');
+  renderComSkeletons();
+  try {
+    const data = await fetchCachedEvents();
+    const now = new Date();
+    const twoYearsOut = new Date(now.getTime() + 730 * 86400000);
+    allComets = data.events
+      .filter(e => e.type === 'comet')
+      .filter(e => { const d = new Date(e.date + 'T00:00:00Z'); return d >= now && d <= twoYearsOut; })
+      .map(e => ({
+        id: e.des, des: e.des, fullname: e.name, dist: e.dist, v_rel: e.v_rel, v_inf: e.v_inf,
+        h: e.h, diameter: e.diameter, jd: e.jd, dateOnly: e.date, notable: e.highlighted,
+        _angle: idToAngle(e.des), _lastPing: 0,
+      }))
+      .sort((a, b) => a.jd - b.jd);
+    liveCounts.com = allComets.length;
+    updateRightNowPanel();
+    renderComStats();
+    applyComFilterSort();
+    const hasNotable = allComets.some(c => c.notable);
+    const updated = data.generated ? ` · updated ${data.generated.slice(0, 10)}` : '';
+    setComStatus('DATA LOADED' + updated);
+    if (hasNotable) { setTimeout(() => setComStatus('☄ NOTABLE PASS DETECTED', true), 1400); setTimeout(() => setComStatus('DATA LOADED' + updated, false), 5000); }
+  } catch (err) {
+    console.error('Comet data:', err);
+    liveCounts.com = 0;
+    updateRightNowPanel();
+    if (err.message === 'PIPELINE_NOT_RUN') {
+      setComStatus('PIPELINE NOT YET RUN', true);
+      renderComPipelineNotice();
+    } else {
+      setComStatus('DATA UNAVAILABLE', true);
+      renderComError(err.message);
+    }
+  }
+}
+function renderComStats() {
+  const total = allComets.length, notable = allComets.filter(c => c.notable).length;
+  const closest = total ? Math.min(...allComets.map(c => c.dist)) : null;
+  const fastest = total ? Math.max(...allComets.map(c => c.v_rel)) : null;
+  const next = total ? [...allComets].sort((a, b) => (a.jd - b.jd) || (a.dist - b.dist))[0] : null;
+  countUp(document.querySelector('#stat-total-com .stat-value'), total, 700);
+  countUp(document.querySelector('#stat-active-com .stat-value'), notable, 700);
+  const cEl = document.querySelector('#stat-closest-com .stat-value'); if (cEl) cEl.textContent = closest !== null ? fmt(closest, 2) : '—';
+  const fEl = document.querySelector('#stat-fastest-com .stat-value'); if (fEl) fEl.textContent = fastest !== null ? fmt(fastest, 1) : '—';
+  const nCard = document.getElementById('stat-next-com');
+  if (nCard && next) {
+    nCard.querySelector('.next-name').textContent = next.fullname;
+    nCard.querySelector('.next-meta').innerHTML = `${next.dateOnly} UTC<br>${fmt(next.dist,3)} AU &nbsp;·&nbsp; ${fmt(next.v_rel,1)} km/s` + (next.notable ? ' &nbsp;·&nbsp; <span style="color:var(--g)">☄ NOTABLE</span>' : '');
+  } else if (nCard) {
+    nCard.querySelector('.next-name').textContent = 'No comets in window';
+    nCard.querySelector('.next-meta').textContent = 'JPL updates this feed as new comets are confirmed — check back later.';
+  }
+}
+function applyComFilterSort() {
+  let result = [...allComets];
+  if (comFilter === 'notable') result = result.filter(c => c.notable);
+  if (comSort === 'date') result.sort((a,b) => a.jd-b.jd);
+  if (comSort === 'distance') result.sort((a,b) => a.dist-b.dist);
+  if (comSort === 'velocity') result.sort((a,b) => b.v_rel-a.v_rel);
+  if (comSort === 'magnitude') result.sort((a,b) => (a.h ?? 99)-(b.h ?? 99));
+  renderComObjects(result);
+}
+function renderComObjects(list) {
+  const grid = document.getElementById('objectsGrid-com');
+  if (!list.length) { grid.innerHTML = `<div class="empty-state"><div class="empty-icon">☄</div><div>NO COMETS MATCH CURRENT FILTERS</div><div class="empty-hint">JPL\u2019s close-approach catalog updates as new comets are discovered and confirmed — try "ALL" or check back later.</div></div>`; return; }
+  grid.innerHTML = list.map(c => `
+    <div class="obj-card ${c.notable ? 'active-comet' : ''}" data-id="${c.id}">
+      <div class="obj-top"><div class="obj-name">${c.fullname}</div><div class="obj-badge ${c.notable?'active-c':'comet'}" ${c.notable?`onclick="event.stopPropagation();showGlossaryTerm('NOTABLE')"`:''}>${c.notable?'☄ NOTABLE':'COMET'}</div></div>
+      <div class="obj-data">
+        <div class="obj-datum"><div class="datum-label">APPROACH DIST.</div><div class="datum-val ${c.notable?'g':'c'}">${fmt(c.dist,3)}<span class="u"> AU</span></div></div>
+        <div class="obj-datum"><div class="datum-label">VELOCITY</div><div class="datum-val">${fmt(c.v_rel,1)}<span class="u"> km/s</span></div></div>
+        <div class="obj-datum"><div class="datum-label">NUCLEUS</div><div class="datum-val">${c.diameter ? fmt(c.diameter,2)+'<span class="u"> km</span>' : '—'}</div></div>
+        <div class="obj-datum"><div class="datum-label">MAGNITUDE</div><div class="datum-val">${c.h!==null?fmt(c.h,1):'—'}<span class="u"> H</span></div></div>
+      </div>
+      <div class="obj-footer">APPROACH: ${c.dateOnly}</div>
+    </div>`).join('');
+  grid.querySelectorAll('.obj-card').forEach(card => {
+    card.addEventListener('click', () => { const c = allComets.find(x => x.id === card.dataset.id); if (c) showComDetail(c); });
+    card.addEventListener('mouseenter', () => { hoveredComId = card.dataset.id; });
+    card.addEventListener('mouseleave', () => { if (hoveredComId === card.dataset.id) hoveredComId = null; });
+  });
+}
+function renderComSkeletons() {
+  const grid = document.getElementById('objectsGrid-com');
+  grid.innerHTML = Array(6).fill(0).map(() => `
+    <div class="obj-card" style="pointer-events:none;cursor:default">
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:12px"><div class="skeleton" style="height:13px;flex:1"></div><div class="skeleton" style="height:13px;width:60px"></div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${Array(4).fill('<div class="skeleton" style="height:38px"></div>').join('')}</div>
+    </div>`).join('');
+}
+function renderComError(msg) {
+  document.getElementById('objectsGrid-com').innerHTML = `
+    <div class="empty-state"><div class="empty-icon">⚠</div><div class="empty-err">DATA UNAVAILABLE</div>
+      <div class="empty-hint">${msg || 'Could not load the cached close-call data.'}<br>Refresh to retry. If this persists, check the data pipeline\u2019s last run in the repo\u2019s Actions tab.</div></div>`;
+  const nCard = document.getElementById('stat-next-com');
+  if (nCard) { nCard.querySelector('.next-name').textContent = 'Feed unavailable'; nCard.querySelector('.next-meta').textContent = '—'; }
+}
+function renderComPipelineNotice() {
+  document.getElementById('objectsGrid-com').innerHTML = `
+    <div class="empty-state"><div class="empty-icon">⏳</div><div>DATA PIPELINE HASN\u2019T RUN YET</div>
+      <div class="empty-hint">This tab reads from <span style="color:var(--c)">data/close-calls-events.json</span>, generated by a scheduled GitHub Action. Run it once manually from the repo\u2019s Actions tab, then refresh this page.</div></div>`;
+  const nCard = document.getElementById('stat-next-com');
+  if (nCard) { nCard.querySelector('.next-name').textContent = 'Awaiting first pipeline run'; nCard.querySelector('.next-meta').textContent = '—'; }
+}
+function showComDetail(c) {
+  const distKm = Math.round(c.dist * AU_KM).toLocaleString();
+  const vInfStr = (c.v_inf !== null && !isNaN(c.v_inf)) ? fmt(c.v_inf, 2) : '—';
+  const diamStr = c.diameter ? `${fmt(c.diameter, 2)} km` : 'Not yet measured';
+  const sbdbLink = `https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=${encodeURIComponent(c.des)}`;
+  openDetailPanel(`
+    <div><div class="detail-name">${c.fullname}</div><div style="margin-top:8px"><span class="obj-badge ${c.notable?'active-c':'comet'}" style="font-size:8.5px">${c.notable?'☄ NOTABLE CLOSE PASS':'COMET'}</span></div></div>
+    ${c.notable ? `<div class="pha-banner" style="background:var(--gd);border-color:rgba(0,232,144,.45)"><div class="pha-icon">☄</div><div class="pha-text" style="color:var(--g)">Passing within 0.1 AU of Earth — genuinely rare; only a couple dozen comets have ever been observed this close in recorded history.</div></div>` : ''}
+    <div><div class="detail-sep">CLOSE APPROACH DATA</div><div class="detail-grid">
+      <div class="detail-field"><div class="df-label">DATE</div><div class="df-value" style="font-size:13px">${c.dateOnly}</div></div>
+      <div class="detail-field"><div class="df-label">APPROACH DISTANCE</div><div class="df-value ${c.notable?'g':'c'}">${fmt(c.dist,4)}<span class="u"> AU</span></div></div>
+      <div class="detail-field"><div class="df-label">DISTANCE (KM)</div><div class="df-value" style="font-size:11px">${distKm}<span class="u"> km</span></div></div>
+      <div class="detail-field"><div class="df-label">RELATIVE VELOCITY</div><div class="df-value">${fmt(c.v_rel,3)}<span class="u"> km/s</span></div></div>
+    </div></div>
+    <div><div class="detail-sep">PHYSICAL DATA</div><div class="detail-grid">
+      <div class="detail-field"><div class="df-label">NUCLEUS DIAMETER</div><div class="df-value" style="font-size:12px">${diamStr}</div></div>
+      <div class="detail-field"><div class="df-label">ABS. MAGNITUDE</div><div class="df-value">${c.h!==null?fmt(c.h,1):'—'}<span class="u"> H</span></div></div>
+      <div class="detail-field"><div class="df-label">V-INFINITY</div><div class="df-value" style="font-size:12px">${vInfStr}<span class="u"> km/s</span></div></div>
+      <div class="detail-field"><div class="df-label">DESIGNATION</div><div class="df-value" style="font-size:11px">${c.des}</div></div>
+    </div></div>
+    <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">Live close-approach data from JPL\u2019s Small-Body Database (Center for Near-Earth Object Studies), updated as new observations refine each comet\u2019s orbit.</div></div>
+    ${visibilityBadgeHTML({ h: c.h, miss_km: c.dist * AU_KM, type: 'comet' })}
+    ${viewFromHereSection(c.des, c.dateOnly, cachedOrbitalElements[c.des] || null)}
+    <a href="${sbdbLink}" target="_blank" rel="noopener noreferrer" class="detail-link">VIEW IN JPL SMALL-BODY DATABASE →</a>`);
+}
+function initRadarCom() {
+  const container = document.querySelector('#panel-comets .radar-canvas-container');
+  const canvas = document.getElementById('radar-com');
+  const zoomLabel = document.getElementById('radarZoomLabel-com');
+  const resize = () => { const sz = container.offsetWidth; canvas.width = sz; canvas.height = sz; };
+  resize();
+  new ResizeObserver(resize).observe(container);
+
+  function setComZoom(v) { comZoomAU = Math.min(3, Math.max(0.1, v)); if (zoomLabel) zoomLabel.textContent = `${fmt(comZoomAU,2)} AU`; }
+  setComZoom(comZoomAU);
+  document.getElementById('btnZoomIn-com').addEventListener('click', () => setComZoom(comZoomAU - 0.25));
+  document.getElementById('btnZoomOut-com').addEventListener('click', () => setComZoom(comZoomAU + 0.25));
+  canvas.addEventListener('wheel', e => { e.preventDefault(); setComZoom(comZoomAU * (e.deltaY < 0 ? 0.9 : 1.111)); }, { passive: false });
+
+  function setComHover(id) {
+    if (id === hoveredComId) return;
+    if (hoveredComId) { const prev = document.querySelector(`#panel-comets .obj-card[data-id="${CSS.escape(hoveredComId)}"]`); prev?.classList.remove('radar-hover'); }
+    hoveredComId = id;
+    if (hoveredComId) { const cur = document.querySelector(`#panel-comets .obj-card[data-id="${CSS.escape(hoveredComId)}"]`); cur?.classList.add('radar-hover'); }
+  }
+  canvas.addEventListener('pointermove', e => {
+    const rect = canvas.getBoundingClientRect(), mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    let found = null;
+    lastComRadarPositions.forEach(p => { if (Math.hypot(p.x - mx, p.y - my) < 10) found = p.id; });
+    setComHover(found);
+    canvas.style.cursor = found ? 'pointer' : 'default';
+  });
+  canvas.addEventListener('pointerleave', () => setComHover(null));
+
+  (function draw(ts) {
+    if (activeTab !== 'comets') { requestAnimationFrame(draw); return; }
+    const ctx = canvas.getContext('2d'), W = canvas.width, H = canvas.height, cx=W/2, cy=H/2, maxR=Math.min(W,H)*0.46;
+    ctx.clearRect(0,0,W,H);
+    ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,maxR,0,Math.PI*2); ctx.clip();
+    const bg = ctx.createRadialGradient(cx,cy,0,cx,cy,maxR); bg.addColorStop(0,'#0A1828'); bg.addColorStop(1,'#020810');
+    ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+    const fsz=Math.max(7,W*0.015); ctx.font=`${fsz}px 'Space Mono', monospace`; ctx.textAlign='left';
+    const labelStepQ = pickLabelStep(comZoomAU, [{upTo:1,step:1},{upTo:2,step:2},{upTo:3,step:4}]);
+    const numRings = Math.floor(comZoomAU / 0.25);
+    for (let i=1;i<=numRings;i++){ const au=i*0.25, r=linToR(au,maxR,comZoomAU);
+      ctx.strokeStyle='rgba(0,192,255,.09)'; ctx.lineWidth=0.5; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+      if (i % labelStepQ === 0) { ctx.fillStyle='rgba(0,192,255,.22)'; ctx.fillText(`${fmt(au,2)} AU`, cx+r+2, cy-2); }
+    }
+    [0,45,90,135].forEach(deg=>{ const rad=deg*Math.PI/180; ctx.strokeStyle='rgba(0,192,255,.05)'; ctx.lineWidth=0.5; ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(rad)*maxR, cy+Math.sin(rad)*maxR); ctx.lineTo(cx-Math.cos(rad)*maxR, cy-Math.sin(rad)*maxR); ctx.stroke(); });
+    const sweep=(ts*0.0003)%(Math.PI*2), sweepSpan=Math.PI*0.45, steps=48;
+    for (let i=0;i<steps;i++){ const t=i/steps; const a1=sweep-sweepSpan*(1-t); const a2=sweep-sweepSpan*(1-(i+1)/steps);
+      ctx.fillStyle=`rgba(0,192,255,${t*0.3})`; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,maxR,a1,a2); ctx.closePath(); ctx.fill(); }
+    ctx.strokeStyle='rgba(0,200,255,.88)'; ctx.lineWidth=1.5; ctx.shadowColor='#00C0FF'; ctx.shadowBlur=8;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(sweep)*maxR, cy+Math.sin(sweep)*maxR); ctx.stroke(); ctx.shadowBlur=0;
+    lastComRadarPositions = [];
+    allComets.forEach(c=>{ const ang=c._angle, r=linToR(c.dist,maxR,comZoomAU), x=cx+Math.cos(ang)*r, y=cy+Math.sin(ang)*r;
+      lastComRadarPositions.push({ id: c.id, x, y });
+      let diff=Math.abs(sweep-ang); if(diff>Math.PI) diff=Math.PI*2-diff;
+      const ping=Math.max(0,1-diff/(Math.PI*0.1)); if(ping>0.5) c._lastPing=ts;
+      const echo=Math.max(0,1-(ts-c._lastPing)/2500);
+      const isHover = hoveredComId === c.id;
+      const rgb=c.notable?'0,232,144':'190,240,255'; const maxEff=Math.max(ping,echo,isHover?1:0);
+      if(echo>0.02){ ctx.fillStyle=`rgba(${rgb},${echo*0.22})`; ctx.beginPath(); ctx.arc(x,y,3+echo*10,0,Math.PI*2); ctx.fill(); }
+      if(ping>0){ ctx.fillStyle=`rgba(${rgb},${ping*0.3})`; ctx.beginPath(); ctx.arc(x,y,4+ping*14,0,Math.PI*2); ctx.fill(); }
+      if (isHover) { ctx.strokeStyle = `rgba(${rgb},.9)`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(x,y,8,0,Math.PI*2); ctx.stroke(); }
+      ctx.shadowColor=`rgb(${rgb})`; ctx.shadowBlur=isHover?16:maxEff*12; ctx.fillStyle=`rgba(${rgb},${isHover?1:0.65+maxEff*0.35})`;
+      ctx.beginPath(); ctx.arc(x,y,isHover?4.4:2.6,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0; });
+    ctx.restore();
+    const earthR=Math.max(5, W*0.013);
+    const eg=ctx.createRadialGradient(cx,cy,0,cx,cy,earthR*3.2); eg.addColorStop(0,'rgba(28,75,180,.35)'); eg.addColorStop(1,'rgba(28,75,180,0)');
+    ctx.fillStyle=eg; ctx.beginPath(); ctx.arc(cx,cy,earthR*3.2,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#183C7A'; ctx.beginPath(); ctx.arc(cx,cy,earthR,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#3A7CC8'; ctx.beginPath(); ctx.arc(cx-earthR*0.18,cy-earthR*0.12,earthR*0.52,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='rgba(0,192,255,.55)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,earthR,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle='rgba(0,192,255,.18)'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,maxR,0,Math.PI*2); ctx.stroke();
+    requestAnimationFrame(draw);
+  })();
+}
+function initComEvents() {
+  document.querySelectorAll('#panel-comets .filter-btn').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#panel-comets .filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); comFilter = btn.dataset.filter; applyComFilterSort();
+  }));
+  document.getElementById('sortSelect-com').addEventListener('change', function(){ comSort=this.value; applyComFilterSort(); });
+}
+
+const DATA_DATE_MIN = new Date(Date.UTC(1900, 0, 1));
+const DATA_DATE_MAX = new Date(Date.UTC(2200, 0, 1));
+const PX_PER_YEAR = 40;
+const PRE1900_ITEM_WIDTH = 90;
+const PRE1900_ZONE_PAD = 50;
+let allCloseCalls = [];
+let ccFilteredSorted = [];
+let ccListShown = 60;
+const CC_LIST_PAGE = 60;
+let closeCallsLoaded = false;
+let ccCardSort = 'date';
+let ccCardSortDir = 1; 
+let ccCardHighlightedOnly = false;
+let ccYearFrom = '';
+let ccYearTo = '';
+let ccFilter = 'highlighted';
+
+function applyYearRange(list) {
+  const from = parseInt(ccYearFrom), to = parseInt(ccYearTo);
+  return list.filter(r => {
+    if (!r.dateObj) return true;
+    const y = r.dateObj.getUTCFullYear();
+    if (!isNaN(from) && y < from) return false;
+    if (!isNaN(to) && y > to) return false;
+    return true;
+  });
+}
+let hoveredCCId = null;
+let ccZoom = 0.1;
+let ccScrollScheduled = false;
+let ccCurrentClusterGroups = [];
+
+const CURATED_NOTES = {
+  '2019 OK': 'A roughly 100m asteroid discovered only about a day before it passed Earth \u2014 one of the closest large-asteroid flybys on record, and a widely-cited example of how little warning we sometimes get for mid-sized objects.',
+  'C/1996 B2': 'One of the closest cometary approaches of the 20th century, passing roughly 0.1 AU from Earth. It briefly became one of the brightest comets in decades, with a tail reported to stretch across more than half the sky.',
+  'C/1995 O1': 'Not a close pass by distance, but one of the most-observed comets in history \u2014 visible to the naked eye for a record 18 months thanks to an unusually large nucleus, bright enough to see even from light-polluted cities.',
+  '99942': 'Will pass within about 32,000 km of Earth\u2019s surface on April 13, 2029 \u2014 closer than geostationary satellites, and visible to the naked eye from parts of the world. Earlier impact-risk scenarios for 2029, 2036, and 2068 have all been fully ruled out by precise tracking.',
+  '1P': 'Halley\u2019s Comet returns to the inner solar system on its regular 76-year cycle \u2014 its first appearance since the famous 1986 apparition studied by an international fleet of spacecraft.',
+};
+
+const CURATED_IMPACTS = [
+  { des: 'CHELYABINSK', name: 'Chelyabinsk Meteor', date: '2013-02-15', type: 'asteroid',
+    note: 'A roughly 20m asteroid entered the atmosphere undetected, approaching from the direction of the Sun where ground-based telescopes couldn\u2019t see it coming. The airburst shockwave injured around 1,500 people, mostly from shattered glass \u2014 a stark reminder that the smallest, most numerous objects are often the hardest to spot in advance.' },
+];
+
+const CURATED_PRE1900 = [
+  { name: 'Caesar\u2019s Comet (Sidus Iulium)', yearLabel: '44 BC', type: 'comet',
+    note: 'A bright, non-periodic comet that appeared during games held shortly after Julius Caesar\u2019s assassination. Romans widely interpreted it as a sign that Caesar had been deified, and it\u2019s referenced by several classical writers including Pliny the Elder. No orbit was ever computed for it \u2014 comets this old are known only through written eyewitness accounts.' },
+  { name: 'Halley\u2019s Comet \u2014 1066 apparition', yearLabel: '1066 AD', type: 'comet',
+    note: 'Blazed across the sky in the months before the Battle of Hastings, famously stitched into the Bayeux Tapestry as an omen of the coming upheaval \u2014 one of the best-documented ancient apparitions of any comet, thanks to how widely it was recorded across Europe.' },
+  { name: 'Halley\u2019s Comet \u2014 1301 apparition', yearLabel: '1301 AD', type: 'comet',
+    note: 'Widely thought to have inspired Giotto di Bondone\u2019s depiction of the Star of Bethlehem in his fresco "Adoration of the Magi," painted a few years later \u2014 making it one of the earliest known instances of a comet directly influencing Western art.' },
+  { name: 'The Great Comet of 1577', yearLabel: '1577 AD', type: 'comet',
+    note: 'Carefully observed by Tycho Brahe, who used parallax measurements to show the comet was far beyond the Moon \u2014 direct evidence against the old Aristotelian model that the heavens beyond the Moon were fixed and unchanging. A genuine turning point in the history of astronomy.' },
+  { name: 'Kirch\u2019s Comet (Great Comet of 1680)', yearLabel: '1680 AD', type: 'comet',
+    note: 'Discovered by Gottfried Kirch, it was the first comet ever found using a telescope, and grew bright enough to be seen in daylight at its peak. Isaac Newton studied its path closely while developing the law of universal gravitation.' },
+  { name: 'Halley\u2019s Comet \u2014 1759 return', yearLabel: '1759 AD', type: 'comet',
+    note: 'The first confirmed return of a predicted comet. Edmond Halley calculated in 1705 that the comets seen in 1531, 1607, and 1682 were the same object on a repeating orbit and predicted its return \u2014 he didn\u2019t live to see it, but the comet arrived almost exactly on schedule, a landmark validation of Newtonian gravity.' },
+  { name: 'Lexell\u2019s Comet', yearLabel: '1770 AD', type: 'comet',
+    note: 'The closest a comet has ever been confirmed to pass Earth \u2014 about 0.015 AU, roughly six lunar distances. Its orbit was later perturbed by a close pass to Jupiter, and the comet was never reliably observed again.' },
+  { name: 'The Great Comet of 1811', yearLabel: '1811 AD', type: 'comet',
+    note: 'Visible to the naked eye for around 260 days, a record at the time. Its appearance the year before Napoleon\u2019s invasion of Russia led to it being remembered as an omen in folklore of the era, including a reference in Tolstoy\u2019s War and Peace.' },
+  { name: 'The Great March Comet of 1843', yearLabel: '1843 AD', type: 'comet',
+    note: 'One of the brightest comets on record, visible in broad daylight at its peak. Part of the Kreutz sungrazer family \u2014 a group of comets all thought to be fragments of one much larger ancient comet that broke apart.' },
+];
+
+function preZoneWidth() { return CURATED_PRE1900.length * PRE1900_ITEM_WIDTH + PRE1900_ZONE_PAD; }
+function dateToX(date) { return ((date - DATA_DATE_MIN) / (365.25 * 86400000)) * PX_PER_YEAR * ccZoom; }
+function pre1900X(index) { return PRE1900_ZONE_PAD / 2 + index * PRE1900_ITEM_WIDTH + PRE1900_ITEM_WIDTH / 2; }
+
+function setCCStatus(text, hazard) {
+  document.getElementById('status-cc').textContent = text;
+  document.getElementById('statusDot-cc').className = 'status-dot' + (hazard ? ' hazard' : '');
+}
+async function loadCloseCalls() {
+  closeCallsLoaded = true;
+  setCCStatus('LOADING...');
+  renderTimelineStructure();
+  try {
+    const data = await fetchCachedEvents();
+    const events = data.events.map(e => {
+      const note = CURATED_NOTES[e.des];
+      return {
+        id: e.des + '-' + e.jd, des: e.des, name: e.name, type: e.type,
+        dateObj: new Date(e.date + 'T00:00:00Z'), dateOnly: e.date, jd: e.jd,
+        dist: e.dist, dist_ld: e.type === 'asteroid' ? e.dist * (AU_KM / 384400) : null,
+        v_rel: e.v_rel, v_inf: e.v_inf, h: e.h, diameter: e.diameter,
+        highlighted: e.highlighted || !!note, curated: !!note, impact: false, preHistory: false,
+        note: note || '',
+        link: `https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=${encodeURIComponent(e.des)}`,
+      };
+    });
+    const impactRecords = CURATED_IMPACTS.map(c => ({
+      id: 'impact-' + c.des, des: c.des, name: c.name, type: c.type,
+      dateObj: new Date(c.date + 'T00:00:00Z'), dateOnly: c.date, jd: null,
+      dist: null, dist_ld: null, v_rel: null, v_inf: null, h: null, diameter: null,
+      highlighted: true, curated: true, impact: true, preHistory: false, note: c.note, link: null,
+    }));
+    const pre1900Records = CURATED_PRE1900.map((c, i) => ({
+      id: 'pre1900-' + i, des: null, name: c.name, type: c.type,
+      dateObj: null, dateOnly: c.yearLabel, jd: null,
+      dist: null, dist_ld: null, v_rel: null, v_inf: null, h: null, diameter: null,
+      highlighted: true, curated: true, impact: false, preHistory: true, preIndex: i, note: c.note, link: null,
+    }));
+    allCloseCalls = [...pre1900Records, ...events, ...impactRecords].sort((a, b) => {
+      if (a.preHistory && b.preHistory) return a.preIndex - b.preIndex;
+      if (a.preHistory) return -1;
+      if (b.preHistory) return 1;
+      return a.dateObj - b.dateObj;
+    });
+    setCCStatus('DATA LOADED' + (data.generated ? ` · updated ${data.generated.slice(0, 10)}` : ''));
+    renderCCStats();
+    ccZoom = 0.1;
+    renderCloseCallsList();
+    requestAnimationFrame(() => {
+      applyCCFilterSortTimelineOnly();
+      requestAnimationFrame(() => ccZoomToFit());
+    });
+  } catch (err) {
+    console.error('Close Calls data:', err);
+    if (err.message === 'PIPELINE_NOT_RUN') {
+      setCCStatus('PIPELINE NOT YET RUN', true);
+      renderCCPipelineNotice();
+    } else {
+      setCCStatus('DATA UNAVAILABLE', true);
+      renderCCError(err.message);
+    }
+  }
+}
+function renderCCStats() {
+  const total = allCloseCalls.length;
+  const highlighted = allCloseCalls.filter(r => r.highlighted).length;
+  const asteroids = allCloseCalls.filter(r => r.type === 'asteroid' && r.dist !== null && !isNaN(r.dist));
+  const comets = allCloseCalls.filter(r => r.type === 'comet' && r.dist !== null && !isNaN(r.dist));
+  const closestAst = asteroids.length ? asteroids.reduce((a, b) => (a.dist < b.dist ? a : b)) : null;
+  const closestCom = comets.length ? comets.reduce((a, b) => (a.dist < b.dist ? a : b)) : null;
+  const now = new Date();
+  const upcoming = allCloseCalls.filter(r => r.highlighted && r.dateObj && r.dateObj > now).sort((a, b) => a.dateObj - b.dateObj)[0];
+  countUp(document.querySelector('#stat-total-cc .stat-value'), total, 700);
+  countUp(document.querySelector('#stat-highlighted-cc .stat-value'), highlighted, 700);
+  const caCard = document.getElementById('stat-closest-ast-cc');
+  if (caCard) { caCard.querySelector('.stat-value').textContent = closestAst ? `${fmt(closestAst.dist_ld, 1)} LD` : '—'; caCard.dataset.id = closestAst ? closestAst.id : ''; }
+  const ccCard = document.getElementById('stat-closest-com-cc');
+  if (ccCard) { ccCard.querySelector('.stat-value').textContent = closestCom ? `${fmt(closestCom.dist, 3)} AU` : '—'; ccCard.dataset.id = closestCom ? closestCom.id : ''; }
+  const nCard = document.getElementById('stat-next-cc-mini');
+  if (nCard) { nCard.querySelector('.stat-value').textContent = upcoming ? upcoming.dateOnly.slice(0, 4) : '—'; nCard.dataset.id = upcoming ? upcoming.id : ''; }
+}
+function applyCCFilter(list) {
+  if (ccFilter === 'asteroid') return list.filter(r => r.type === 'asteroid');
+  if (ccFilter === 'comet') return list.filter(r => r.type === 'comet');
+  if (ccFilter === 'highlighted') return list.filter(r => r.highlighted);
+  return list;
+}
+function applyCCFilterSort(recenter) {
+  renderHistoricalStrip();
+  let timelineItems = applyCCFilter(allCloseCalls).filter(r => !r.preHistory);
+  timelineItems.forEach(rec => { rec._x = dateToX(rec.dateObj); });
+  ccFilteredSorted = timelineItems.slice().sort((a, b) => a._x - b._x);
+  ccListShown = CC_LIST_PAGE;
+  renderTimelineStructure();
+  renderTimelineMarkers(recenter);
+  let cardItems = timelineItems.slice();
+  if (ccCardHighlightedOnly) cardItems = cardItems.filter(r => r.highlighted);
+  cardItems = applyYearRange(cardItems);
+  renderCCObjects(sortCCCards(cardItems));
+  const btn = document.getElementById('btnCCHighlightedOnly');
+  if (btn) btn.classList.toggle('active', ccCardHighlightedOnly);
+}
+function sortCCCards(list) {
+  const sorted = list.slice();
+  const d = ccCardSortDir;
+  if (ccCardSort === 'date') sorted.sort((a, b) => d * (a.dateObj - b.dateObj));
+  else if (ccCardSort === 'distance') sorted.sort((a, b) => d * ((a.dist??999) - (b.dist??999)));
+  else if (ccCardSort === 'velocity') sorted.sort((a, b) => d * ((b.v_rel??0) - (a.v_rel??0)));
+  else if (ccCardSort === 'magnitude') sorted.sort((a, b) => d * ((a.h??99) - (b.h??99)));
+  return sorted;
+}
+function renderHistoricalStrip() {
+  const strip = document.getElementById('historicalStrip');
+  if (!strip) return;
+  const items = allCloseCalls.filter(r => r.preHistory);
+  if (!items.length) { strip.innerHTML = '<div style="font-family:\'Space Mono\',monospace;font-size:9px;color:var(--t2)">Loading…</div>'; return; }
+  strip.innerHTML = items.map(rec => `
+    <div onclick="showCCDetail(allCloseCalls.find(r=>r.id==='${rec.id}'))" style="cursor:pointer;background:var(--card);border:1px solid var(--b2);padding:8px 12px;min-width:140px;max-width:180px;transition:border-color .14s" onmouseenter="this.style.borderColor='var(--c)'" onmouseleave="this.style.borderColor='var(--b2)'">
+      <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--c);letter-spacing:1px;margin-bottom:3px">${rec.dateOnly}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--t1);line-height:1.4">${rec.name}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:7.5px;color:var(--t2);margin-top:3px">${rec.type === 'comet' ? '☄ COMET' : '🪨 ASTEROID'}</div>
+    </div>`).join('');
+}
+function renderCloseCallsList() {
+  renderHistoricalStrip();
+  let filtered = applyCCFilter(allCloseCalls).filter(r => !r.preHistory);
+  if (ccCardHighlightedOnly) filtered = filtered.filter(r => r.highlighted);
+  filtered = applyYearRange(filtered);
+  ccListShown = CC_LIST_PAGE;
+  renderCCObjects(sortCCCards(filtered));
+  const btn = document.getElementById('btnCCHighlightedOnly');
+  if (btn) btn.classList.toggle('active', ccCardHighlightedOnly);
+}
+function applyCCFilterSortTimelineOnly() {
+
+  const filtered = applyCCFilter(allCloseCalls).filter(r => !r.preHistory);
+  filtered.forEach(rec => { rec._x = dateToX(rec.dateObj); });
+  ccFilteredSorted = filtered.slice().sort((a, b) => a._x - b._x);
+  renderTimelineStructure();
+  renderTimelineMarkers(false);
+}
+function markerColor(rec) {
+  if (rec.impact) return '#FF2A2A';
+  if (rec.curated) return '#FFD27A';
+  if (rec.highlighted) return rec.type === 'comet' ? '#00E890' : '#FF5C1A';
+  return rec.type === 'comet' ? '#BFEFFF' : '#FF9C4A';
+}
+function computeFitZoom() {
+  const wrap = document.getElementById('timelineWrap');
+  if (!wrap || !wrap.clientWidth) return 0.15;
+  const naturalMainWidth = 300 * PX_PER_YEAR; 
+  const available = Math.max(200, wrap.clientWidth - 24);
+  return Math.max(0.05, available / naturalMainWidth);
+}
+function setCCZoom(newZoom) {
+  const wrap = document.getElementById('timelineWrap');
+  const oldZoom = ccZoom, center = wrap ? wrap.scrollLeft + wrap.clientWidth / 2 : 0;
+  ccZoom = Math.min(8, Math.max(0.05, newZoom));
+  ccFilteredSorted.forEach(rec => { rec._x = rec.preHistory ? pre1900X(rec.preIndex) : dateToX(rec.dateObj); });
+  ccFilteredSorted.sort((a, b) => a._x - b._x);
+  renderTimelineStructure();
+  if (wrap) {
+    const ratio = ccZoom / oldZoom;
+    requestAnimationFrame(() => { wrap.scrollLeft = center * ratio - wrap.clientWidth / 2; renderTimelineMarkers(false); });
+  }
+}
+function ccZoomToFit() {
+  const wrap = document.getElementById('timelineWrap');
+  setCCZoom(computeFitZoom());
+  if (wrap) requestAnimationFrame(() => { wrap.scrollLeft = 0; renderTimelineMarkers(false); });
+}
+function renderTimelineStructure() {
+  const structure = document.getElementById('timelineStructure');
+  const track = document.getElementById('timelineTrack');
+  if (!structure || !track) return;
+  const mainZoneWidth = ((DATA_DATE_MAX - DATA_DATE_MIN) / (365.25 * 86400000)) * PX_PER_YEAR * ccZoom;
+  track.style.width = mainZoneWidth + 'px';
+  let html = `<div class="tl-baseline" style="left:0;width:${mainZoneWidth}px"></div>`;
+  const labelStepYears = ccZoom < 0.15 ? 100 : ccZoom < 0.6 ? 50 : ccZoom < 1.5 ? 25 : ccZoom < 4 ? 10 : ccZoom < 7 ? 5 : 1;
+  for (let y = 1900; y <= 2200; y++) {
+    const x = dateToX(new Date(Date.UTC(y, 0, 1)));
+    const major = y % labelStepYears === 0;
+    html += `<div class="tl-tick" style="left:${x}px;height:${major ? 16 : 6}px"></div>`;
+    if (major) html += `<div class="tl-tick-label" style="left:${x}px">${y}</div>`;
+  }
+  const todayX = dateToX(new Date());
+  html += `<div class="tl-today" style="left:${todayX}px"></div><div class="tl-today-label" style="left:${todayX}px">TODAY</div>`;
+  structure.innerHTML = html;
+}
+function renderTimelineMarkers(recenter) {
+  const wrap = document.getElementById('timelineWrap');
+  const layer = document.getElementById('timelineMarkers');
+  if (!wrap || !layer) return;
+  const todayX = dateToX(new Date());
+  if (recenter) { wrap.scrollLeft = todayX - wrap.clientWidth / 2; }
+  const buffer = Math.max(wrap.clientWidth, 400);
+  const lo = wrap.scrollLeft - buffer, hi = wrap.scrollLeft + wrap.clientWidth + buffer;
+  const visible = ccFilteredSorted.filter(r => r._x >= lo && r._x <= hi);
+  const binPx = 26;
+  const bins = new Map();
+  visible.forEach(rec => {
+    const b = Math.round(rec._x / binPx);
+    if (!bins.has(b)) bins.set(b, []);
+    bins.get(b).push(rec);
+  });
+  let html = '';
+  const clusterGroups = [];
+  bins.forEach(group => {
+    if (group.length === 1) {
+      const rec = group[0];
+      const size = (rec.impact || rec.curated) ? 15 : rec.highlighted ? 11 : 7;
+      const color = markerColor(rec);
+      const pulse = rec.curated ? ' featured-pulse' : '';
+      html += `<div class="tl-marker${pulse}" data-id="${rec.id}" title="${rec.name} \u2014 ${rec.dateOnly}" style="left:${rec._x}px;width:${size}px;height:${size}px;background:${color};box-shadow:0 0 ${size}px -3px ${color}"></div>`;
+    } else {
+      const avgX = group.reduce((s, r) => s + r._x, 0) / group.length;
+      const anyHighlighted = group.some(r => r.highlighted);
+      const clusterIdx = clusterGroups.length;
+      clusterGroups.push(group);
+      const wouldExceedMax = Math.min(8, ccZoom * 2.5) === ccZoom;
+      html += `<div class="tl-cluster${anyHighlighted ? ' tl-cluster-hot' : ''}" data-x="${avgX}" data-cidx="${clusterIdx}" title="${group.length} events \u2014 click to ${wouldExceedMax ? 'view contents' : 'zoom in'}">${group.length}</div>`
+        .replace('class="tl-cluster', `style="left:${avgX}px" class="tl-cluster`);
+    }
+  });
+  ccCurrentClusterGroups = clusterGroups;
+  layer.innerHTML = html;
+  layer.querySelectorAll('.tl-marker').forEach(m => m.addEventListener('click', () => {
+    const rec = allCloseCalls.find(r => r.id === m.dataset.id);
+    if (rec) showCCDetail(rec);
+  }));
+  layer.querySelectorAll('.tl-cluster').forEach(c => c.addEventListener('click', () => {
+    const x = parseFloat(c.dataset.x);
+    const cidx = parseInt(c.dataset.cidx, 10);
+    const group = ccCurrentClusterGroups[cidx];
+    if (!group) return;
+    const wouldExceedMax = Math.min(8, ccZoom * 2.5) === ccZoom;
+    if (wouldExceedMax) {
+      showCCClusterPanel(group);
+    } else {
+      const newZoom = Math.min(8, ccZoom * 2.5);
+      const ratio = newZoom / ccZoom;
+      ccZoom = newZoom;
+      ccFilteredSorted.forEach(rec => { rec._x = rec.preHistory ? pre1900X(rec.preIndex) : dateToX(rec.dateObj); });
+      ccFilteredSorted.sort((a, b) => a._x - b._x);
+      renderTimelineStructure();
+      requestAnimationFrame(() => { wrap.scrollLeft = x * ratio - wrap.clientWidth / 2; renderTimelineMarkers(false); });
+    }
+  }));
+}
+function renderCCObjects(list) {
+  const grid = document.getElementById('objectsGrid-cc');
+  if (!grid) return;
+  const countEl = document.getElementById('ccCardCount');
+  if (countEl) countEl.textContent = list.length ? `(${list.length.toLocaleString()})` : '';
+  if (!list.length) { grid.innerHTML = `<div class="empty-state"><div>NO EVENTS MATCH CURRENT FILTERS</div></div>`; return; }
+  const slice = list.slice(0, ccListShown);
+  grid.innerHTML = slice.map(rec => ccCardHTML(rec)).join('');
+  if (list.length > ccListShown) {
+    grid.insertAdjacentHTML('beforeend', `<button class="filter-btn" id="btnCCLoadMore" style="grid-column:1/-1;padding:14px;cursor:pointer">LOAD MORE — SHOWING ${ccListShown} OF ${list.length}</button>`);
+    document.getElementById('btnCCLoadMore').addEventListener('click', () => { ccListShown += CC_LIST_PAGE; renderCCObjects(list); });
+  }
+  grid.querySelectorAll('.obj-card').forEach(card => {
+    card.addEventListener('click', () => { const rec = allCloseCalls.find(r => r.id === card.dataset.id); if (rec) showCCDetail(rec); });
+    card.addEventListener('mouseenter', () => {
+      hoveredCCId = card.dataset.id;
+      const dot = document.querySelector(`.tl-marker[data-id="${CSS.escape(hoveredCCId)}"]`);
+      if (dot) {
+        dot.classList.add('radar-hover');
+      } else {
+        const cidx = ccCurrentClusterGroups.findIndex(g => g.some(r => r.id === hoveredCCId));
+        if (cidx >= 0) document.querySelector(`.tl-cluster[data-cidx="${cidx}"]`)?.classList.add('radar-hover');
+      }
+    });
+    card.addEventListener('mouseleave', () => {
+      const id = card.dataset.id;
+      const dot = document.querySelector(`.tl-marker[data-id="${CSS.escape(id)}"]`);
+      if (dot) {
+        dot.classList.remove('radar-hover');
+      } else {
+        const cidx = ccCurrentClusterGroups.findIndex(g => g.some(r => r.id === id));
+        if (cidx >= 0) document.querySelector(`.tl-cluster[data-cidx="${cidx}"]`)?.classList.remove('radar-hover');
+      }
+      hoveredCCId = null;
+    });
+  });
+}
+function ccCardHTML(rec) {
+  let badge = rec.type === 'comet' ? 'COMET' : 'ASTEROID', badgeClass = 'comet';
+  if (rec.impact) { badge = '💥 IMPACT'; badgeClass = 'pha'; }
+  else if (rec.preHistory) { badge = '📜 HISTORICAL'; badgeClass = 'active-c'; }
+  else if (rec.curated) { badge = '★ FEATURED'; badgeClass = 'active-c'; }
+  else if (rec.highlighted) { badge = rec.type === 'comet' ? '☄ NOTABLE' : '⚠ PHA'; badgeClass = rec.type === 'comet' ? 'active-c' : 'pha'; }
+  const distStr = rec.type === 'asteroid'
+    ? (rec.dist_ld !== null ? `${fmt(rec.dist_ld, 2)}<span class="u"> LD</span>` : '—')
+    : (rec.dist !== null ? `${fmt(rec.dist, 2)}<span class="u"> AU</span>` : '—');
+  const footer = rec.preHistory ? `HISTORICAL: ${rec.dateOnly}` : `${(rec.dateObj > new Date()) ? 'PREDICTED' : 'OCCURRED'}: ${rec.dateOnly}`;
+  return `
+    <div class="obj-card ${rec.impact ? 'pha' : rec.highlighted ? 'active-comet' : ''}" data-id="${rec.id}">
+      <div class="obj-top"><div class="obj-name">${rec.name}</div><div class="obj-badge ${badgeClass}">${badge}</div></div>
+      <div class="obj-data">
+        <div class="obj-datum"><div class="datum-label">DISTANCE</div><div class="datum-val ${rec.highlighted ? 'g' : 'c'}">${distStr}</div></div>
+        <div class="obj-datum"><div class="datum-label">TYPE</div><div class="datum-val" style="font-size:11px">${rec.type === 'comet' ? 'Comet' : 'Asteroid'}</div></div>
+        <div class="obj-datum"><div class="datum-label">VELOCITY</div><div class="datum-val">${rec.v_rel ? fmt(rec.v_rel, 1) + '<span class="u"> km/s</span>' : '—'}</div></div>
+        <div class="obj-datum"><div class="datum-label">MAGNITUDE</div><div class="datum-val">${rec.h !== null ? fmt(rec.h, 1) : '—'}<span class="u"> H</span></div></div>
+      </div>
+      <div class="obj-footer">${footer}</div>
+    </div>`;
+}
+function renderCCError(msg) {
+  document.getElementById('objectsGrid-cc').innerHTML = `
+    <div class="empty-state"><div class="empty-icon">⚠</div><div class="empty-err">DATA UNAVAILABLE</div>
+      <div class="empty-hint">${msg || 'Could not load the cached close-call data.'}<br>Refresh to retry. If this persists, check the data pipeline\u2019s last run in the repo\u2019s Actions tab.</div></div>`;
+}
+function renderCCPipelineNotice() {
+  document.getElementById('objectsGrid-cc').innerHTML = `
+    <div class="empty-state"><div class="empty-icon">⏳</div><div>DATA PIPELINE HASN\u2019T RUN YET</div>
+      <div class="empty-hint">This tab reads from <span style="color:var(--c)">data/close-calls-events.json</span>, generated by a scheduled GitHub Action. Run it once manually from the repo\u2019s Actions tab, then refresh this page.</div></div>`;
+}
+function showCCClusterPanel(group) {
+  const sorted = group.slice().sort((a, b) => {
+    if (a.preHistory && b.preHistory) return a.preIndex - b.preIndex;
+    if (a.preHistory) return -1;
+    if (b.preHistory) return 1;
+    return a.dateObj - b.dateObj;
+  });
+  const cardsHTML = sorted.map(rec => ccCardHTML(rec)).join('');
+  openDetailPanel(`
+    <div>
+      <div class="detail-name">${group.length} Events at This Point</div>
+      <div style="margin-top:6px;font-family:'Space Mono',monospace;font-size:9px;color:var(--t2);letter-spacing:1.5px">These objects are too close together to show individually at this zoom level. Click any card to open its full details.</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">${cardsHTML}</div>`);
+  document.querySelectorAll('#detailPanel .obj-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const rec = allCloseCalls.find(r => r.id === card.dataset.id);
+      if (rec) showCCDetail(rec);
+    });
+  });
+}
+function showCCDetail(rec) {
+  const isFuture = rec.dateObj && rec.dateObj > new Date();
+  let badgeText = rec.type === 'comet' ? 'COMET' : 'ASTEROID', badgeClass = 'comet';
+  if (rec.impact) { badgeText = '💥 IMPACT EVENT'; badgeClass = 'pha'; }
+  else if (rec.preHistory) { badgeText = '📜 HISTORICAL RECORD'; badgeClass = 'active-c'; }
+  else if (rec.curated) { badgeText = '★ FEATURED EVENT'; badgeClass = 'active-c'; }
+  else if (rec.highlighted) { badgeText = rec.type === 'comet' ? '☄ NOTABLE PASS' : '⚠ POTENTIALLY HAZARDOUS ASTEROID'; badgeClass = 'active-c'; }
+  let distRow = '';
+  if (!rec.preHistory) {
+    distRow = rec.type === 'asteroid'
+      ? `<div class="detail-field"><div class="df-label">DISTANCE</div><div class="df-value ${rec.highlighted ? 'g' : 'c'}">${rec.dist_ld !== null ? fmt(rec.dist_ld, 3) : '—'}<span class="u"> ${gloss('LD', 'LD')}</span></div></div>`
+      : `<div class="detail-field"><div class="df-label">DISTANCE</div><div class="df-value ${rec.highlighted ? 'g' : 'c'}">${rec.dist !== null ? fmt(rec.dist, 4) : '—'}<span class="u"> ${gloss('AU', 'AU')}</span></div></div>`;
+  }
+  let banner;
+  if (rec.preHistory) banner = 'From the historical record, predating systematic orbit tracking \u2014 known through eyewitness accounts rather than computed orbits.';
+  else if (rec.impact) banner = 'Hand-added: confirmed impacts are excluded from JPL\u2019s close-approach catalog by design.';
+  else if (rec.curated) banner = 'Hand-picked for historical or scientific significance, layered on top of the automatic catalog. Cached from JPL\u2019s Close-Approach Data API, refreshed weekly by an automated pipeline.';
+  else if (rec.highlighted) banner = `Automatically flagged using NASA/JPL\u2019s ${gloss('PHA', 'PHA')}-style criteria (size and proximity)${rec.type === 'comet' ? ' \u2014 here, the comet notable-pass threshold' : ''}. Cached from JPL\u2019s Close-Approach Data API, refreshed weekly by an automated pipeline.`;
+  else banner = 'A routine catalogued close approach \u2014 most tracked objects pose no concern. Cached from JPL\u2019s Close-Approach Data API, refreshed weekly by an automated pipeline.';
+  openDetailPanel(`
+    <div><div class="detail-name">${rec.name}</div><div style="margin-top:8px"><span class="obj-badge ${badgeClass}" style="font-size:8.5px">${badgeText}</span></div></div>
+    ${rec.note ? `<div class="detail-prose">${rec.note}</div>` : ''}
+    ${rec.impact ? `<div class="pha-banner"><div class="pha-icon">💥</div><div class="pha-text">This object actually entered Earth\u2019s atmosphere. NASA/JPL\u2019s close-approach database specifically excludes confirmed ${gloss('impacts', 'IMPACT')}, so this entry is added by hand.</div></div>` : ''}
+    <div><div class="detail-sep">${rec.preHistory ? 'HISTORICAL RECORD' : isFuture ? 'PREDICTED APPROACH' : 'RECORDED APPROACH'}</div><div class="detail-grid">
+      <div class="detail-field"><div class="df-label">${rec.preHistory ? 'YEAR' : 'DATE'}</div><div class="df-value" style="font-size:13px">${rec.dateOnly}</div></div>
+      ${distRow}
+      ${!rec.preHistory ? `<div class="detail-field"><div class="df-label">VELOCITY</div><div class="df-value">${rec.v_rel ? fmt(rec.v_rel, 2) : '—'}<span class="u"> km/s</span></div></div>` : ''}
+      ${!rec.preHistory ? `<div class="detail-field"><div class="df-label">${gloss('ABS. MAGNITUDE', 'H')}</div><div class="df-value">${rec.h !== null ? fmt(rec.h, 1) : '—'}<span class="u"> H</span></div></div>` : ''}
+    </div></div>
+    <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">${banner}</div></div>
+    ${!rec.preHistory && rec.h !== null ? visibilityBadgeHTML({ h: rec.h, miss_km: rec.type === 'asteroid' ? (rec.dist_ld * 384400) : (rec.dist * AU_KM), type: rec.type }) : ''}
+    ${!rec.preHistory ? viewFromHereSection(rec.des || rec.id, rec.dateOnly, cachedOrbitalElements[rec.des] || null) : ''}
+    ${rec.link ? `<a href="${rec.link}" target="_blank" rel="noopener noreferrer" class="detail-link">VIEW IN JPL SMALL-BODY DATABASE →</a>` : ''}`);
+}
+function initCCEvents() {
+  document.querySelectorAll('#panel-closecalls [data-ccfilter]').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('#panel-closecalls [data-ccfilter]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); ccFilter = btn.dataset.ccfilter; applyCCFilterSort(true);
+  }));
+  document.getElementById('btnCCToday').addEventListener('click', () => {
+    const wrap = document.getElementById('timelineWrap');
+    if (wrap) { wrap.scrollLeft = dateToX(new Date()) - wrap.clientWidth / 2; renderTimelineMarkers(false); }
+  });
+  document.getElementById('btnCCZoomIn').addEventListener('click', () => setCCZoom(ccZoom * 1.6));
+  document.getElementById('btnCCZoomOut').addEventListener('click', () => setCCZoom(ccZoom / 1.6));
+  document.getElementById('btnCCZoomFit').addEventListener('click', ccZoomToFit);
+  const wrap = document.getElementById('timelineWrap');
+  if (wrap) {
+    wrap.addEventListener('scroll', () => {
+      if (ccScrollScheduled) return;
+      ccScrollScheduled = true;
+      requestAnimationFrame(() => { renderTimelineMarkers(false); ccScrollScheduled = false; });
+    });
+    wrap.addEventListener('wheel', e => {
+
+      e.preventDefault();
+      setCCZoom(ccZoom * (e.deltaY < 0 ? 1.2 : 1 / 1.2));
+    }, { passive: false });
+  }
+  ['stat-closest-ast-cc', 'stat-closest-com-cc', 'stat-next-cc-mini'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', function () {
+      const rid = this.dataset.id;
+      if (!rid) return;
+      const rec = allCloseCalls.find(r => r.id === rid);
+      if (rec) showCCDetail(rec);
+    });
+  });
+  // Card sort
+  const ccSortSel = document.getElementById('sortSelect-cc');
+  if (ccSortSel) ccSortSel.addEventListener('change', function () {
+    ccCardSort = this.value; renderCloseCallsList();
+  });
+
+  const sortDirBtn = document.getElementById('btnCCSortDir');
+  if (sortDirBtn) sortDirBtn.addEventListener('click', function () {
+    ccCardSortDir *= -1;
+    this.textContent = ccCardSortDir === 1 ? '↑' : '↓';
+    renderCloseCallsList();
+  });
+
+  const hlBtn = document.getElementById('btnCCHighlightedOnly');
+  if (hlBtn) hlBtn.addEventListener('click', function () {
+    ccCardHighlightedOnly = !ccCardHighlightedOnly;
+    this.classList.toggle('active', ccCardHighlightedOnly);
+    renderCloseCallsList();
+  });
+
+  document.getElementById('btnCCYearApply')?.addEventListener('click', () => {
+    ccYearFrom = document.getElementById('ccYearFromInput')?.value || '';
+    ccYearTo   = document.getElementById('ccYearToInput')?.value  || '';
+    renderCloseCallsList();
+  });
+  document.getElementById('btnCCYearClear')?.addEventListener('click', () => {
+    ccYearFrom = ''; ccYearTo = '';
+    const fi = document.getElementById('ccYearFromInput'), ti = document.getElementById('ccYearToInput');
+    if (fi) fi.value = ''; if (ti) ti.value = '';
+    renderCloseCallsList();
+  });
+
+  ['ccYearFromInput','ccYearToInput'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btnCCYearApply')?.click();
+    });
+  });
+}
+
+function initHeaderDate() {
+  const d = new Date();
+  document.getElementById('headerDate').textContent = d.toUTCString().replace(' GMT',' UTC').substring(5,25).toUpperCase();
+}
+function setHeaderHeightVar() {
+  const h = document.querySelector('header').offsetHeight;
+  document.documentElement.style.setProperty('--header-h', h + 'px');
+}
+async function init() {
+  initStarfield();
+  initHeaderDate();
+  setHeaderHeightVar();
+  window.addEventListener('resize', setHeaderHeightVar);
+  resizeSolarCanvas();
+  initHomeInteractions();
+  requestAnimationFrame(drawSolarSystem);
+  initRadarAst();
+  initAstEvents();
+  initRadarCom();
+  initComEvents();
+  initCCEvents();
+  fetchCachedElements().then(els => { cachedOrbitalElements = els; });
+  await Promise.all([loadAsteroids(), loadComets()]);
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
