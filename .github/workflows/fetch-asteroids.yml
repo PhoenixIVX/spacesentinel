@@ -34,5 +34,6 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "Update asteroid data ($(date -u +%Y-%m-%dT%H:%M)Z)"
+            git pull --rebase origin main
             git push
           fi
