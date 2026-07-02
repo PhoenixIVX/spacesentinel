@@ -55,6 +55,7 @@ html, body {
 
 .app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
 
+
 header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 28px; border-bottom: 1px solid var(--b1);
@@ -86,12 +87,14 @@ header {
 
 .header-date { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--t3); letter-spacing: 1.5px; white-space: nowrap; }
 
+
 .tab-panel { display: none; opacity: 0; transition: opacity .22s ease; }
 #panel-home.active { display: flex; flex-direction: column; height: calc(100vh - var(--header-h, 70px)); min-height: 460px; overflow: hidden; }
 .tab-panel.active { display: block; }
 .tab-panel.fade-in { opacity: 1; }
 
 .eyebrow { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 4px; color: var(--t2); text-align: center; }
+
 
 .hero-section { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--b1); }
 .radar-side { padding: 28px; border-right: 1px solid var(--b1); display: flex; flex-direction: column; align-items: center; gap: 16px; }
@@ -180,6 +183,7 @@ header {
 .status-dot.calm { background: var(--g); box-shadow: 0 0 7px var(--g); animation: none; }
 @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: .15; } }
 
+
 .detail-overlay { position: fixed; inset: 0; background: rgba(5,10,18,.65); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 200; display: flex; justify-content: flex-end; opacity: 0; pointer-events: none; transition: opacity .2s; }
 .detail-overlay.open { opacity: 1; pointer-events: all; }
 .detail-panel { width: min(100%, 460px); height: 100%; background: var(--panel); border-left: 1px solid var(--b2); padding: 24px; overflow-y: auto; transform: translateX(100%); transition: transform .25s cubic-bezier(.4,0,.2,1); display: flex; flex-direction: column; gap: 18px; }
@@ -209,6 +213,7 @@ header {
 input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 
+
 .timeline-outer { position: relative; }
 .timeline-wrap { width: 100%; height: 190px; overflow-x: auto; overflow-y: hidden; position: relative; background: var(--card); border-top: 1px solid var(--b1); border-bottom: 1px solid var(--b1); }
 .timeline-zoom-group { position: absolute; top: 8px; right: 8px; z-index: 10; }
@@ -228,6 +233,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .stat-clickable { cursor: pointer; transition: border-color .15s; }
 .stat-clickable:hover { border-color: var(--c); }
 .tl-marker.featured-pulse { animation: phaPulse 2.2s ease-in-out infinite; }
+
 
 .home-hero { display: grid; grid-template-columns: 1fr 320px; border-bottom: 1px solid var(--b1); flex: 1 1 auto; min-height: 0; }
 .solar-stage { position: relative; min-height: 0; border-right: 1px solid var(--b1); overflow: hidden; }
@@ -311,6 +317,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
 
   <main>
 
+    
     <section class="tab-panel active fade-in" id="panel-home">
       <div class="home-hero">
         <div class="solar-stage">
@@ -387,6 +394,8 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
       </div>
     </section>
 
+    
+    
     <section class="tab-panel" id="panel-meteors">
       <section style="padding:24px 28px 0">
         <div class="list-header">
@@ -462,6 +471,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
       </section>
     </section>
 
+    
     <section class="tab-panel" id="panel-comets">
       <section class="hero-section">
         <div class="radar-side">
@@ -509,6 +519,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
       </section>
     </section>
 
+    
     <section class="tab-panel" id="panel-closecalls">
       <section style="padding:24px 28px 0">
         <div class="list-header">
@@ -536,7 +547,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
           <button class="zoom-btn" id="btnCCZoomFit" style="font-size:8px">FIT</button>
         </div>
       </div>
-
+      
       <section style="padding:12px 28px 0;border-top:1px solid var(--b1)">
         <div class="eyebrow" style="margin-bottom:12px">📜 RECORDED HISTORY (PRE-1900)</div>
         <div id="historicalStrip" style="display:flex;flex-wrap:wrap;gap:8px"></div>
@@ -614,6 +625,7 @@ function countUp(el, target, ms) {
   })(t0);
 }
 
+
 const VIS_TIERS = [
   { id: 'naked_eye',  maxMag:  6, label: 'Naked eye',           note: 'Potentially visible without equipment under dark skies — rare for asteroids.' },
   { id: 'binoculars', maxMag: 10, label: 'Binoculars',          note: 'Should be detectable with standard 7×50 or 10×50 binoculars under reasonably dark skies.' },
@@ -631,7 +643,6 @@ function classifyVisibility({ h, miss_km, type }) {
   const phase_correction = 0.04 * phase_deg;
   let apparentMag;
   if (isComet) {
-
     apparentMag = h + 5 * Math.log10(delta_au) + 10 * Math.log10(r_au);
   } else {
     apparentMag = h + 5 * Math.log10(r_au * delta_au) + phase_correction;
@@ -653,6 +664,7 @@ function visibilityBadgeHTML(params) {
     </div>
   </div>`;
 }
+
 
 let userLocationCache = null;
 let cachedOrbitalElements = {};
@@ -817,6 +829,7 @@ function closeDetailPanel() { document.getElementById('detailOverlay')?.classLis
 document.getElementById('detailOverlay').addEventListener('click', e => { if (e.target.id === 'detailOverlay') closeDetailPanel(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetailPanel(); });
 
+
 function initStarfield() {
   const canvas = document.getElementById('starfield');
   const ctx = canvas.getContext('2d');
@@ -840,8 +853,9 @@ function initStarfield() {
   })();
 }
 
+
 const DEG2RAD = Math.PI / 180;
-const GM_SUN = 0.0002959122082855911; // AU^3/day^2
+const GM_SUN = 0.0002959122082855911;
 const AU_KM = 149597870.7;
 
 function jdFromDate(date) {
@@ -942,6 +956,7 @@ function computeBodyNow(body, jd) {
   return Object.assign({}, body, { pos });
 }
 
+
 const GLOSSARY = {
   PHA: { term: 'Potentially Hazardous Asteroid (PHA)', def: 'A NASA/JPL classification for an asteroid whose orbit can bring it within 0.05 AU of Earth\u2019s orbit, and which is large enough to matter (roughly 140m or wider). It describes the orbit\u2019s geometry, not an active threat \u2014 the vast majority of cataloged PHAs are well-tracked and pose no danger.' },
   NEO: { term: 'Near-Earth Object (NEO)', def: 'Any asteroid or comet whose orbit brings it within about 1.3 AU of the Sun \u2014 close enough that it could potentially cross paths with Earth\u2019s orbit.' },
@@ -965,21 +980,21 @@ function showAlertSignup() {
   const supabaseReady = CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY;
   if (!supabaseReady) {
     openDetailPanel(`
-      <div><div class="detail-name">🔔 Close-Call Alerts</div></div>
-      <div class="detail-prose">Email alerts aren't live yet — the Supabase database needs to be provisioned first. Once the backend is set up, alerts will notify you when an asteroid or comet meets your visibility threshold.</div>
-      <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">Check back soon. When this goes live, you'll be able to set thresholds for naked-eye, binoculars, or telescope-visible objects and receive a digest before any qualifying close approaches.</div></div>`);
+      <div><div class="detail-name">🔔 Space Sentinel Alerts</div></div>
+      <div class="detail-prose">Email alerts aren't live yet — the database needs to be provisioned first. Once set up, alerts will notify you when an asteroid, comet, or meteor shower meets your preferences.</div>
+      <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">Check back soon.</div></div>`);
     return;
   }
   openDetailPanel(`
-    <div><div class="detail-name">🔔 Close-Call Alerts</div>
-    <div style="margin-top:8px;font-family:'Space Mono',monospace;font-size:10px;color:var(--read);line-height:1.9">Get an email when something interesting is approaching Earth. One digest email per qualifying event — no spam.</div></div>
+    <div><div class="detail-name">🔔 Space Sentinel Alerts</div>
+    <div style="margin-top:8px;font-family:'Space Mono',monospace;font-size:10px;color:var(--read);line-height:1.9">Choose exactly what you want to hear about. You can change any of these later.</div></div>
     <div style="display:flex;flex-direction:column;gap:14px">
       <div class="detail-field">
         <div class="df-label">EMAIL ADDRESS</div>
         <input id="alertEmail" type="email" placeholder="you@example.com" style="background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:12px;padding:8px 12px;width:100%;outline:none">
       </div>
       <div class="detail-field">
-        <div class="df-label">MINIMUM VISIBILITY</div>
+        <div class="df-label">MINIMUM VISIBILITY (ASTEROIDS &amp; COMETS)</div>
         <select id="alertTier" style="background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:8px 12px;width:100%;appearance:none">
           <option value="naked_eye">Naked eye (very rare)</option>
           <option value="binoculars">Binoculars or better</option>
@@ -988,25 +1003,57 @@ function showAlertSignup() {
         </select>
       </div>
       <div class="detail-field">
-        <div class="df-label">OBJECT TYPES</div>
-        <div style="display:flex;gap:12px;font-family:'Space Mono',monospace;font-size:10px;color:var(--read)">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="alertAst" checked> Asteroids</label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="alertCom" checked> Comets <span style="color:var(--t2)">(mag est. uncertain)</span></label>
+        <div class="df-label">ALERT ME ABOUT</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-family:'Space Mono',monospace;font-size:10.5px;color:var(--read)">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="alertAst" checked> Asteroids</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="alertCom" checked> Comets <span style="color:var(--t2)">(brightness estimate uncertain)</span></label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="alertMet" checked> Meteor showers</label>
         </div>
+      </div>
+      <div class="detail-field" id="hemiField">
+        <div class="df-label">METEOR SHOWER HEMISPHERE</div>
+        <select id="alertHemi" style="background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:8px 12px;width:100%;appearance:none">
+          <option value="both" selected>Both — send me all showers</option>
+          <option value="N">Northern hemisphere only</option>
+          <option value="S">Southern hemisphere only</option>
+        </select>
+      </div>
+      <div class="detail-field">
+        <div class="df-label">REMINDER WINDOWS</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-family:'Space Mono',monospace;font-size:10.5px;color:var(--read)">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="alert30d" checked> 30-day heads-up <span style="color:var(--t2)">(time to plan)</span></label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="alert7d" checked> 7-day reminder <span style="color:var(--t2)">(final notice)</span></label>
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--t2);margin-top:6px">Uncheck both to only get first-sighting digests.</div>
       </div>
     </div>
     <button class="detail-link" style="cursor:pointer;width:100%;text-align:center" onclick="submitAlertSignup()">SUBSCRIBE →</button>
     <div id="alertSignupMsg" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--t2);display:none"></div>
-    <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">You'll receive a verification email. Unsubscribe at any time via the link in every email — no account needed.</div></div>`);
+    <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">You'll receive a verification email. Every alert includes a manage-preferences link if you change your mind.</div></div>`);
+
+  const metBox = document.getElementById('alertMet');
+  const hemiField = document.getElementById('hemiField');
+  if (metBox && hemiField) {
+    const sync = () => { hemiField.style.display = metBox.checked ? '' : 'none'; };
+    metBox.addEventListener('change', sync); sync();
+  }
 }
 async function submitAlertSignup() {
   const email = document.getElementById('alertEmail')?.value?.trim();
   const tier  = document.getElementById('alertTier')?.value;
   const ast   = document.getElementById('alertAst')?.checked;
   const com   = document.getElementById('alertCom')?.checked;
+  const met   = document.getElementById('alertMet')?.checked;
+  const hemi  = document.getElementById('alertHemi')?.value || 'both';
+  const r30   = document.getElementById('alert30d')?.checked;
+  const r7    = document.getElementById('alert7d')?.checked;
   const msg   = document.getElementById('alertSignupMsg');
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     if (msg) { msg.textContent = '⚠ Please enter a valid email address.'; msg.style.display = 'block'; msg.style.color = 'var(--h)'; }
+    return;
+  }
+  if (!ast && !com && !met) {
+    if (msg) { msg.textContent = '⚠ Pick at least one thing to be alerted about.'; msg.style.display = 'block'; msg.style.color = 'var(--h)'; }
     return;
   }
   if (msg) { msg.textContent = 'Subscribing…'; msg.style.display = 'block'; msg.style.color = 'var(--t2)'; }
@@ -1021,11 +1068,21 @@ async function submitAlertSignup() {
       },
       body: JSON.stringify({
         email,
-        thresholds: { visibility_tier: tier, include_asteroids: ast, include_comets: com, max_dist_ld: null, min_diameter_m: null },
+        thresholds: {
+          visibility_tier:   tier,
+          include_asteroids: ast,
+          include_comets:    com,
+          include_meteors:   met,
+          meteor_hemisphere: hemi,
+          reminders_30d:     r30,
+          reminders_7d:      r7,
+          max_dist_ld:       null,
+          min_diameter_m:    null,
+        },
       }),
     });
     if (res.status === 409) {
-      if (msg) { msg.textContent = '✓ This email is already subscribed. Check your inbox to manage your preferences.'; msg.style.color = 'var(--g)'; }
+      if (msg) { msg.textContent = '✓ This email is already subscribed. Check your inbox for the link to manage preferences.'; msg.style.color = 'var(--g)'; }
     } else if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     } else {
@@ -1053,6 +1110,7 @@ function showGlossaryAll() {
 }
 function gloss(label, key) { return `<span class="gloss" onclick="showGlossaryTerm('${key}')">${label}</span>`; }
 
+
 let activeTab = 'home';
 function switchTab(tab) {
   if (tab === activeTab) return;
@@ -1066,7 +1124,6 @@ function switchTab(tab) {
     current.classList.remove('active');
     next.classList.add('active');
     requestAnimationFrame(() => next.classList.add('fade-in'));
-    // Load data AFTER the panel is display:block so clientWidth is real
     if (tab === 'asteroids' && !asteroidsLoaded) loadAsteroids();
     if (tab === 'comets' && !cometsLoaded) loadComets();
     if (tab === 'closecalls' && !closeCallsLoaded) loadCloseCalls();
@@ -1074,6 +1131,7 @@ function switchTab(tab) {
   }, 180);
 }
 document.querySelectorAll('.nav-tab').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
 
 let simTime = Date.now();
 let playing = true;
@@ -1085,7 +1143,7 @@ let liveCounts = { ast: null, com: null };
 let lastScreenPositions = [];
 let selectedBodyName = null;
 
-const MAX_AU_HOME = 36; // ~Halley aphelion
+const MAX_AU_HOME = 36; 
 
 function resizeSolarCanvas() {
   const canvas = document.getElementById('solarCanvas');
@@ -1394,16 +1452,15 @@ function initHomeInteractions() {
   });
 }
 
-const CONFIG = {
 
+
+const CONFIG = {
   ASTEROIDS_CACHE:    'data/asteroids.json',
   ASTEROIDS_LIVE_URL: 'https://api.nasa.gov/neo/rest/v1/feed',
-  ASTEROIDS_KEY:      'DEMO_KEY',      
-
+  ASTEROIDS_KEY:      'DEMO_KEY',        
 
   CLOSE_CALLS_URL:    'data/close-calls-events.json',
   ORBITAL_ELEMENTS_URL: 'data/orbital-elements.json',
-
 
   JPL_CAD_URL:        'https://ssd-api.jpl.nasa.gov/cad.api',
 
@@ -1427,7 +1484,6 @@ async function loadAsteroids() {
   setAstStatus('LOADING...');
   renderAstSkeletons();
   try {
-
     let records, source;
     const cacheRes = await fetch(CONFIG.ASTEROIDS_CACHE);
     if (cacheRes.ok) {
@@ -1441,7 +1497,6 @@ async function loadAsteroids() {
       }));
       source = `cached · ${(cached.generated || '').slice(0, 10)}`;
     } else {
-
       const start = dateStr(new Date());
       const end   = dateStr(new Date(Date.now() + 7 * 86400000));
       const url   = `${CONFIG.ASTEROIDS_LIVE_URL}?start_date=${start}&end_date=${end}&api_key=${CONFIG.ASTEROIDS_KEY}`;
@@ -1651,6 +1706,7 @@ function initAstEvents() {
   }));
   document.getElementById('sortSelect-ast').addEventListener('change', function(){ astSort=this.value; applyAstFilterSort(); });
 }
+
 
 const CAD_URL = CONFIG.JPL_CAD_URL;
 let comFilter = 'all', comSort = 'date';
@@ -1900,6 +1956,7 @@ function initComEvents() {
   document.getElementById('sortSelect-com').addEventListener('change', function(){ comSort=this.value; applyComFilterSort(); });
 }
 
+
 const METEOR_SHOWERS = [
   { id:'quadrantids', name:'Quadrantids', peakMonth:1, peakDay:3,  spanDays:3,  zhr:110, hemi:'N', radiant:'Boötes (northern sky)', parent:'Asteroid 2003 EH1',
     note:'One of the strongest showers of the year, but with a very sharp peak lasting only about six hours — catch the right night or miss it entirely. Best after midnight in the northern sky.' },
@@ -1938,7 +1995,6 @@ function showerIsActive(sh) {
   return Math.abs(now - peak) / 86400000 <= sh.spanDays / 2;
 }
 function hemiQuality(sh, lat) {
-
   if (sh.hemi === 'B') return { score: 3, text: 'Good viewing from your hemisphere' };
   const north = lat >= 0;
   if ((sh.hemi === 'N') === north) return { score: 3, text: 'Excellent — this shower favours your hemisphere' };
@@ -2059,6 +2115,7 @@ function renderMeteors() {
   renderMeteorWorldMap(null);
 }
 
+
 const DATA_DATE_MIN = new Date(Date.UTC(1900, 0, 1));
 const DATA_DATE_MAX = new Date(Date.UTC(2200, 0, 1));
 const PX_PER_YEAR = 40;
@@ -2173,7 +2230,6 @@ async function loadCloseCalls() {
     renderCCStats();
     ccZoom = 0.1;
     renderCloseCallsList();
-
     requestAnimationFrame(() => {
       applyCCFilterSortTimelineOnly();
       requestAnimationFrame(() => ccZoomToFit());
@@ -2260,7 +2316,6 @@ function renderCloseCallsList() {
   if (btn) btn.classList.toggle('active', ccCardHighlightedOnly);
 }
 function applyCCFilterSortTimelineOnly() {
-  // Timeline only shows 1900-2200 objects — pre-1900 are in their own section
   const filtered = applyCCFilter(allCloseCalls).filter(r => !r.preHistory);
   filtered.forEach(rec => { rec._x = dateToX(rec.dateObj); });
   ccFilteredSorted = filtered.slice().sort((a, b) => a._x - b._x);
@@ -2276,7 +2331,7 @@ function markerColor(rec) {
 function computeFitZoom() {
   const wrap = document.getElementById('timelineWrap');
   if (!wrap || !wrap.clientWidth) return 0.15;
-  const naturalMainWidth = 300 * PX_PER_YEAR;
+  const naturalMainWidth = 300 * PX_PER_YEAR; 
   const available = Math.max(200, wrap.clientWidth - 24);
   return Math.max(0.05, available / naturalMainWidth);
 }
@@ -2326,7 +2381,6 @@ function renderTimelineMarkers(recenter) {
   if (recenter) { wrap.scrollLeft = todayX - wrap.clientWidth / 2; }
   const buffer = Math.max(wrap.clientWidth, 400);
   const lo = wrap.scrollLeft - buffer, hi = wrap.scrollLeft + wrap.clientWidth + buffer;
-
   const visible = ccFilteredSorted.filter(r => r._x >= lo && r._x <= hi);
   const binPx = 26;
   const bins = new Map();
@@ -2462,7 +2516,6 @@ function showCCClusterPanel(group) {
       <div style="margin-top:6px;font-family:'Space Mono',monospace;font-size:9px;color:var(--t2);letter-spacing:1.5px">These objects are too close together to show individually at this zoom level. Click any card to open its full details.</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">${cardsHTML}</div>`);
-
   document.querySelectorAll('#detailPanel .obj-card').forEach(card => {
     card.addEventListener('click', () => {
       const rec = allCloseCalls.find(r => r.id === card.dataset.id);
@@ -2524,7 +2577,6 @@ function initCCEvents() {
       requestAnimationFrame(() => { renderTimelineMarkers(false); ccScrollScheduled = false; });
     });
     wrap.addEventListener('wheel', e => {
-
       e.preventDefault();
       setCCZoom(ccZoom * (e.deltaY < 0 ? 1.2 : 1 / 1.2));
     }, { passive: false });
@@ -2538,7 +2590,7 @@ function initCCEvents() {
       if (rec) showCCDetail(rec);
     });
   });
- 
+
   const ccSortSel = document.getElementById('sortSelect-cc');
   if (ccSortSel) ccSortSel.addEventListener('change', function () {
     ccCardSort = this.value; renderCloseCallsList();
@@ -2577,6 +2629,7 @@ function initCCEvents() {
   });
 }
 
+
 function initHeaderDate() {
   const d = new Date();
   document.getElementById('headerDate').textContent = d.toUTCString().replace(' GMT',' UTC').substring(5,25).toUpperCase();
@@ -2598,7 +2651,6 @@ async function init() {
   initRadarCom();
   initComEvents();
   initCCEvents();
-  // Load orbital elements cache quietly in parallel — used by View From Here
   fetchCachedElements().then(els => { cachedOrbitalElements = els; });
   await Promise.all([loadAsteroids(), loadComets()]);
 }
