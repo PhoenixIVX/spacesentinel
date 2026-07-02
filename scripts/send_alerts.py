@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-"""
-Space Sentinel — close-call alert sender.
-"""
 import json
 import math
 import os
@@ -15,13 +12,12 @@ from typing import Optional
 import httpx   
 
 SUPABASE_URL        = os.environ['SUPABASE_URL'].rstrip('/')
-SUPABASE_SERVICE_KEY = os.environ['SUPABASE_SERVICE_KEY']   
+SUPABASE_SERVICE_KEY = os.environ['SUPABASE_SERVICE_KEY']   # bypasses RLS
 RESEND_API_KEY      = os.environ['RESEND_API_KEY']
 FROM_EMAIL          = os.environ.get('FROM_EMAIL', 'Space Sentinel <alerts@spacesentinel.xyz>')
 SITE_URL            = os.environ.get('SITE_URL', 'https://spacesentinel.xyz')
 LOOK_AHEAD_DAYS     = 30
 AU_KM               = 149_597_870.7
-
 
 VIS_TIERS = [
     {'id': 'naked_eye',  'max_mag':  6,  'label': 'Naked eye'},
@@ -32,14 +28,12 @@ VIS_TIERS = [
 TIER_ORDER = [t['id'] for t in VIS_TIERS]
 
 def apparent_mag(h: float, miss_km: float, is_comet: bool) -> float:
-    if not miss_km or miss_km <= 0:
-        return None
     delta_au = miss_km / AU_KM
     r_au     = 1.0
     if is_comet:
         return h + 5 * math.log10(delta_au) + 10 * math.log10(r_au)
     else:
-        phase_correction = 0.04 * 45   
+        phase_correction = 0.04 * 45  
         return h + 5 * math.log10(r_au * delta_au) + phase_correction
 
 def tier_for_mag(mag: float) -> dict:
@@ -52,7 +46,7 @@ def subscriber_tier_index(threshold_tier: str) -> int:
     try:
         return TIER_ORDER.index(threshold_tier)
     except ValueError:
-        return TIER_ORDER.index('telescope')   
+        return TIER_ORDER.index('telescope')  
 
 def object_meets_threshold(obj: dict, thresholds: dict) -> bool:
     """True if this close-approach object meets the subscriber's thresholds."""
@@ -70,12 +64,7 @@ def object_meets_threshold(obj: dict, thresholds: dict) -> bool:
         miss_km = (obj.get('dist', 0) * AU_KM)
 
     if h is None:
-        return False   
-    miss_km_val = obj.get('miss_km') or obj.get('miss_ld', 0) * 384_400
-    if obj_type == 'comet':
-        miss_km_val = (obj.get('dist', 0) * AU_KM)
-    if not miss_km_val or miss_km_val <= 0:
-        return False
+        return False  
 
     mag = apparent_mag(float(h), float(miss_km), is_comet)
 
@@ -84,13 +73,11 @@ def object_meets_threshold(obj: dict, thresholds: dict) -> bool:
     if TIER_ORDER.index(tier_id) > subscriber_tier_index(sub_limit):
         return False
 
-
     max_ld = thresholds.get('max_dist_ld')
     if max_ld is not None:
         miss_ld = obj.get('miss_ld') or miss_km / 384_400
         if float(miss_ld) > float(max_ld):
             return False
-
 
     min_diam = thresholds.get('min_diameter_m')
     if min_diam is not None:
@@ -100,7 +87,6 @@ def object_meets_threshold(obj: dict, thresholds: dict) -> bool:
 
     return True
 
-# ─── Supabase helpers ────────────────────────────────────────────────────────
 SUPA_HEADERS = {
     'apikey':        SUPABASE_SERVICE_KEY,
     'Authorization': f'Bearer {SUPABASE_SERVICE_KEY}',
@@ -121,7 +107,6 @@ def supa_post(path: str, payload: dict) -> dict:
     r.raise_for_status()
     return r.json() if r.text else {}
 
-# ─── Resend helper ───────────────────────────────────────────────────────────
 def send_email(to: str, subject: str, html: str) -> bool:
     r = httpx.post(
         'https://api.resend.com/emails',
@@ -134,8 +119,18 @@ def send_email(to: str, subject: str, html: str) -> bool:
         return False
     return True
 
-# ─── Email template ──────────────────────────────────────────────────────────
-def render_email(subscriber: dict, objects: list) -> tuple[str, str]:
+def dist_plain_english(miss_ld) -> str:
+    """One-line plain-English context for a lunar-distance value."""
+    try:
+        ld = float(miss_ld)
+    except (TypeError, ValueError):
+        return ''
+    if ld < 1:    return 'closer than the Moon'
+    if ld < 3:    return f'about {ld:.0f}\u00d7 the Moon\u2019s distance'
+    if ld < 20:   return f'roughly {ld:.0f}\u00d7 the Moon\u2019s distance'
+    return f'{ld:.0f} lunar distances \u2014 a comfortable miss'
+
+def render_email(subscriber: dict, objects: list, reminder_label: str = '') -> tuple[str, str]:
     unsub_token = subscriber['token']
     unsub_url   = f'{SITE_URL}/unsubscribe?token={unsub_token}'
     rows = ''
@@ -149,20 +144,28 @@ def render_email(subscriber: dict, objects: list) -> tuple[str, str]:
         tier = tier_for_mag(mag)['label'] if mag is not None else 'Unknown'
         mag_str = f'{mag:.1f}' if mag is not None else '—'
         caveat = ' (comet — estimate uncertain)' if is_comet else ''
-        dist_str = f"{obj.get('miss_ld', obj.get('dist', '—')):.2f} {'LD' if 'miss_ld' in obj else 'AU'}"
+        if 'miss_ld' in obj:
+            dist_str = f"{obj['miss_ld']:.2f} LD"
+            dist_context = dist_plain_english(obj['miss_ld'])
+        else:
+            dist_str = f"{obj.get('dist', 0):.2f} AU"
+            dist_context = 'a distant pass, far beyond the Moon'
         rows += f"""
         <tr>
           <td style="padding:10px 14px;border-bottom:1px solid #0c1e38">
             <strong style="color:#b8d8f8">{obj.get('name','Unknown')}</strong>
             {'&nbsp;<span style="color:#ff5c1a;font-size:11px">⚠ PHA</span>' if obj.get('hazardous') else ''}
           </td>
-          <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#3a6080">{obj.get('date','—')}</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#00c0ff">{dist_str}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#3a6080;white-space:nowrap">{obj.get('date','—')}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#00c0ff;white-space:nowrap">{dist_str}<br><span style="color:#3a6080;font-size:9px">{dist_context}</span></td>
           <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#9cc4e8">{tier}{caveat}</td>
-          <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#3a6080">mag {mag_str}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#3a6080;white-space:nowrap">mag {mag_str}</td>
         </tr>"""
     count = len(objects)
-    subject = f'Space Sentinel: {count} close approach{"es" if count != 1 else ""} in the next 30 days'
+    if reminder_label:
+        subject = f'Space Sentinel {reminder_label}: {count} close approach{"es" if count != 1 else ""} coming up'
+    else:
+        subject = f'Space Sentinel: {count} close approach{"es" if count != 1 else ""} in the next 30 days'
     html = f"""
     <!DOCTYPE html><html><head><meta charset="UTF-8"></head>
     <body style="margin:0;padding:0;background:#050a12;font-family:'Courier New',monospace;color:#b8d8f8">
@@ -202,13 +205,11 @@ def render_email(subscriber: dict, objects: list) -> tuple[str, str]:
     </body></html>"""
     return subject, html
 
-# ─── Main ────────────────────────────────────────────────────────────────────
 def main():
     now       = datetime.now(timezone.utc)
     cutoff    = now + timedelta(days=LOOK_AHEAD_DAYS)
     today_str = now.date().isoformat()
 
-    # 1. Load cached close-approach data (written by the other GitHub Actions)
     all_objects = []
     for fname in ['data/asteroids.json', 'data/close-calls-events.json']:
         if not os.path.exists(fname):
@@ -219,7 +220,6 @@ def main():
         records = data.get('asteroids') or data.get('events') or []
         all_objects.extend(records)
 
-    # 2. Filter to the look-ahead window
     upcoming = []
     for obj in all_objects:
         d = obj.get('date')
@@ -238,7 +238,6 @@ def main():
         print('Nothing to alert on — exiting.')
         return
 
-    # 3. Load verified active subscribers
     subscribers = supa_get('subscribers', {
         'select':       'id,email,token,thresholds',
         'verified':     'eq.true',
@@ -246,57 +245,71 @@ def main():
     })
     print(f'{len(subscribers)} active subscribers.')
 
+    def obj_key(obj):
+        return (obj.get('des') or obj.get('id') or obj.get('name', 'unknown'), obj.get('date'))
+
+    def days_until(obj):
+        try:
+            d = datetime.strptime(obj['date'], '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            return (d - now).days
+        except (KeyError, ValueError):
+            return None
+
+    passes = [
+        ('close_approach', None,  ''),
+        ('30_day_warning', 30,    '30-day heads-up'),
+        ('7_day_warning',  7,     '7-day reminder'),
+    ]
+
     sent_total = 0
     for sub in subscribers:
-        sid       = sub['id']
+        sid        = sub['id']
         thresholds = sub.get('thresholds') or {}
-
-        # 4. Filter objects for this subscriber
         qualifying = [obj for obj in upcoming if object_meets_threshold(obj, thresholds)]
         if not qualifying:
             continue
 
-        # 5. Check alert_log — skip objects already sent to this subscriber
-        already_sent = set()
-        logs = supa_get('alert_log', {
-            'select':        'object_des,approach_date',
-            'subscriber_id': f'eq.{sid}',
-            'alert_type':    'eq.close_approach',
-        })
-        for row in logs:
-            already_sent.add((row['object_des'], row['approach_date']))
+        for alert_type, days_target, label in passes:
+            if days_target is None:
+                batch = qualifying
+            else:
+                batch = [o for o in qualifying if (du := days_until(o)) is not None and abs(du - days_target) <= 1]
+            if not batch:
+                continue
 
-        new_objects = [
-            obj for obj in qualifying
-            if (obj.get('des') or obj.get('id') or obj.get('name'), obj.get('date')) not in already_sent
-        ]
-        if not new_objects:
-            continue
+            already = set()
+            logs = supa_get('alert_log', {
+                'select':        'object_des,approach_date',
+                'subscriber_id': f'eq.{sid}',
+                'alert_type':    f'eq.{alert_type}',
+            })
+            for row in logs:
+                already.add((row['object_des'], row['approach_date']))
 
-        # 6. Send digest email
-        subject, html = render_email(sub, new_objects)
-        success = send_email(sub['email'], subject, html)
-        if success:
-            sent_total += 1
-            # 7. Log to alert_log (prevents future duplicates)
-            for obj in new_objects:
-                des = obj.get('des') or obj.get('id') or obj.get('name', 'unknown')
-                try:
-                    supa_post('alert_log', {
-                        'subscriber_id': sid,
-                        'object_des':    des,
-                        'approach_date': obj.get('date'),
-                        'alert_type':    'close_approach',
-                        'email_status':  'sent',
-                    })
-                except Exception as e:
-                    print(f'  Warning: failed to log alert for {des}: {e}')
-            print(f'  Sent digest to {sub["email"]}: {len(new_objects)} object(s)')
-        else:
-            print(f'  Failed to send to {sub["email"]}')
-        time.sleep(0.25)   # rate limit headroom
+            new_objects = [o for o in batch if obj_key(o) not in already]
+            if not new_objects:
+                continue
 
-    print(f'Done. Sent {sent_total} digest email(s).')
+            subject, html = render_email(sub, new_objects, reminder_label=label)
+            if send_email(sub['email'], subject, html):
+                sent_total += 1
+                for obj in new_objects:
+                    try:
+                        supa_post('alert_log', {
+                            'subscriber_id': sid,
+                            'object_des':    obj_key(obj)[0],
+                            'approach_date': obj.get('date'),
+                            'alert_type':    alert_type,
+                            'email_status':  'sent',
+                        })
+                    except Exception as e:
+                        print(f'  Warning: failed to log {alert_type} for {obj_key(obj)[0]}: {e}')
+                print(f'  Sent {alert_type} to {sub["email"]}: {len(new_objects)} object(s)')
+            else:
+                print(f'  Failed {alert_type} to {sub["email"]}')
+            time.sleep(0.25)  
+
+    print(f'Done. Sent {sent_total} email(s).')
 
 if __name__ == '__main__':
     main()
