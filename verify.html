@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirm Subscription — Space Sentinel</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23050A12'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='%2300C0FF'%3E%E2%97%88%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#050A12; color:#B8D8F8; font-family:'Space Mono',monospace;
+         display:flex; align-items:center; justify-content:center; min-height:100vh; }
+  .card { background:#070D1A; border:1px solid #0C1E38; padding:40px 44px; max-width:440px; text-align:center; }
+  .brand { font-family:'Orbitron',sans-serif; font-size:16px; color:#00C0FF; letter-spacing:4px; margin-bottom:6px; }
+  .sub { font-size:9px; color:#3A6080; letter-spacing:3px; margin-bottom:28px; }
+  #msg { font-size:12px; line-height:2; color:#9CC4E8; }
+  .ok { color:#00E890; } .err { color:#FF5C1A; }
+  a { color:#00C0FF; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">◈ SPACE SENTINEL</div>
+  <div class="sub">SUBSCRIPTION CONFIRMATION</div>
+  <div id="msg">Confirming…</div>
+</div>
+<script>
+
+const SUPABASE_URL      = 'https://wudepgxsdilwigdsraxg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1ZGVwZ3hzZGlsd2lnZHNyYXhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTgxMzIsImV4cCI6MjA5ODQzNDEzMn0._3t2BECeOC4o0Arc2IN6PPsbx72QHlUWbXkhnTSKlug';
+
+(async () => {
+  const msg = document.getElementById('msg');
+  const token = new URLSearchParams(location.search).get('token');
+  if (!token) { msg.innerHTML = '<span class="err">No confirmation token found in the link.</span>'; return; }
+  try {
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/verify_subscriber`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ p_token: token }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const verified = await res.json();
+    if (verified === true) {
+      msg.innerHTML = '<span class="ok">✓ Subscription confirmed.</span><br><br>You\'ll receive alert digests when qualifying close approaches are detected — plus 30-day and 7-day reminders before each event.<br><br><a href="/">← Back to Space Sentinel</a>';
+    } else {
+      msg.innerHTML = '<span class="err">This confirmation link is invalid or was already used.</span><br><br><a href="/">← Back to Space Sentinel</a>';
+    }
+  } catch (e) {
+    msg.innerHTML = `<span class="err">Confirmation failed: ${e.message}</span><br><br>Try the link again in a moment, or re-subscribe on the site.`;
+  }
+})();
+</script>
+</body>
+</html>
