@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-Space Sentinel — asteroid data fetcher.
-
-"""
 import json
 import os
 import time
@@ -50,6 +46,7 @@ def process_neo(data):
                 'diam_min':  diam_min,
                 'diam_max':  diam_max,
                 'diam_avg':  (diam_min + diam_max) / 2,
+
                 'hazardous': neo.get('is_potentially_hazardous_asteroid', False),
                 'magnitude': neo.get('absolute_magnitude_h'),
                 'url':       neo.get('nasa_jpl_url', ''),
@@ -61,26 +58,34 @@ def main():
     os.makedirs(DATA_DIR, exist_ok=True)
 
     today = datetime.now(timezone.utc)
-    start = date_str(today)
-    end   = date_str(today + timedelta(days=7))
 
-    print(f'Fetching NEOs {start} → {end}...')
-    params = {
-        'start_date': start,
-        'end_date':   end,
-        'api_key':    NASA_API_KEY,
-    }
-    data = fetch_json(NEO_URL, params)
+    all_records = {}
+    for chunk in range(4):
+        c_start = today + timedelta(days=chunk * 7)
+        c_end   = c_start + timedelta(days=7)
+        start, end = date_str(c_start), date_str(c_end)
+        print(f'Fetching NEOs {start} → {end}...')
+        params = {
+            'start_date': start,
+            'end_date':   end,
+            'api_key':    NASA_API_KEY,
+        }
+        data = fetch_json(NEO_URL, params)
+        if 'error' in data:
+            raise RuntimeError(f"NASA API error: {data['error']}")
+        for rec in process_neo(data):
 
-    if 'error' in data:
-        raise RuntimeError(f"NASA API error: {data['error']}")
+            all_records[(rec['id'], rec['date'])] = rec
+        time.sleep(1)  
 
-    records = process_neo(data)
-    print(f'  {len(records)} records')
+    records = sorted(all_records.values(), key=lambda r: r['date'])
+    print(f'  {len(records)} records total across 28-day window')
 
+    window_start = date_str(today)
+    window_end   = date_str(today + timedelta(days=28))
     output = {
         'generated': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-        'window':    {'start': start, 'end': end},
+        'window':    {'start': window_start, 'end': window_end},
         'count':     len(records),
         'asteroids': records,
     }
