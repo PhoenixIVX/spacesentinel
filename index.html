@@ -23,7 +23,7 @@
   --b2:      #142840;
   --b3:      #1E3858;
   --t1:      #B8D8F8;
-  --t2:      #3A6080;
+  --t2:      #5A90B8;
   --t3:      #162840;
   --c:       #00C0FF;
   --cg:      rgba(0,192,255,.28);
@@ -93,7 +93,7 @@ header {
 .tab-panel.active { display: block; }
 .tab-panel.fade-in { opacity: 1; }
 
-.eyebrow { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 4px; color: var(--t2); text-align: center; }
+.eyebrow { font-family: 'Orbitron', sans-serif; font-size: 9px; letter-spacing: 4px; color: var(--t2); text-align: center; }
 
 
 .hero-section { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--b1); }
@@ -125,14 +125,14 @@ header {
 
 .next-card { background: var(--card); border: 1px solid var(--b2); padding: 16px; position: relative; overflow: hidden; }
 .next-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, var(--c), transparent 70%); }
-.next-card-eyebrow { font-family: 'Orbitron', sans-serif; font-size: 7.5px; letter-spacing: 3px; color: var(--t2); margin-bottom: 10px; }
+.next-card-eyebrow { font-family: 'Orbitron', sans-serif; font-size: 9px; letter-spacing: 3px; color: var(--t2); margin-bottom: 10px; }
 .next-name { font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 600; color: var(--t1); margin-bottom: 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .next-meta { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--read); line-height: 2; }
 
 .list-section { padding: 24px 28px 56px; }
 .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
 .controls { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-.filter-btn { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--t2); background: transparent; border: 1px solid var(--b2); padding: 5px 11px; cursor: pointer; transition: all .14s; white-space: nowrap; }
+.filter-btn { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 2px; color: var(--t2); background: transparent; border: 1px solid var(--b2); padding: 5px 11px; cursor: pointer; transition: all .14s; white-space: nowrap; }
 .filter-btn:hover, .filter-btn.active { color: var(--c); border-color: var(--c); background: var(--cd); }
 .filter-btn.active.h-filter { color: var(--h); border-color: var(--h); background: var(--hd); }
 .filter-btn.active.g-filter { color: var(--g); border-color: var(--g); background: var(--gd); }
@@ -153,7 +153,7 @@ header {
 .obj-card:hover::after { width: 100%; }
 .obj-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 11px; }
 .obj-name { font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 600; color: var(--t1); letter-spacing: 1px; line-height: 1.4; }
-.obj-badge { font-family: 'Space Mono', monospace; font-size: 7.5px; letter-spacing: 1.5px; padding: 2px 6px; white-space: nowrap; flex-shrink: 0; }
+.obj-badge { font-family: 'Space Mono', monospace; font-size: 8.5px; letter-spacing: 1.5px; padding: 2px 6px; white-space: nowrap; flex-shrink: 0; }
 .obj-badge.pha { color: var(--h); border: 1px solid var(--h); background: var(--hd); animation: phaPulse 2.5s ease-in-out infinite; }
 .obj-badge.safe { color: var(--g); border: 1px solid rgba(0,232,144,.35); background: rgba(0,232,144,.05); }
 .obj-badge.comet { color: var(--c); border: 1px solid var(--c); background: var(--cd); }
@@ -162,13 +162,13 @@ header {
 @keyframes phaPulse { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 8px 1px var(--hg); } }
 .obj-data { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 0; }
 .obj-datum { display: flex; flex-direction: column; gap: 2px; }
-.datum-label { font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 1.5px; color: var(--t2); }
+.datum-label { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: var(--t2); }
 .datum-val { font-family: 'Space Mono', monospace; font-size: 13px; font-weight: 700; color: var(--t1); }
 .datum-val .u { font-size: 9px; color: var(--t2); font-weight: 400; }
 .datum-val.c { color: var(--c); }
 .datum-val.h { color: var(--h); }
 .datum-val.g { color: var(--g); }
-.obj-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--b1); font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1.5px; color: var(--t2); }
+.obj-footer { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--b1); font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1.5px; color: var(--t2); }
 
 .skeleton { background: linear-gradient(90deg, var(--b1) 25%, var(--b2) 50%, var(--b1) 75%); background-size: 200% 100%; animation: shimmer 1.6s infinite; border-radius: 2px; }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
@@ -191,10 +191,10 @@ header {
 .detail-close { align-self: flex-end; background: transparent; border: 1px solid var(--b2); color: var(--t2); font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; padding: 5px 10px; cursor: pointer; transition: all .14s; }
 .detail-close:hover { border-color: var(--c); color: var(--c); }
 .detail-name { font-family: 'Orbitron', sans-serif; font-size: 15px; font-weight: 700; color: var(--t1); line-height: 1.35; }
-.detail-sep { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 3px; color: var(--t2); padding-bottom: 6px; border-bottom: 1px solid var(--b1); }
+.detail-sep { font-family: 'Orbitron', sans-serif; font-size: 9px; letter-spacing: 3px; color: var(--t2); padding-bottom: 6px; border-bottom: 1px solid var(--b1); }
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .detail-field { display: flex; flex-direction: column; gap: 4px; }
-.df-label { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; color: var(--t2); }
+.df-label { font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 2px; color: var(--t2); }
 .df-value { font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700; color: var(--t1); }
 .df-value .u { font-size: 9px; color: var(--t2); font-weight: 400; }
 .df-value.c { color: var(--c); }
@@ -252,7 +252,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 
 .home-side { padding: 22px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto; min-height: 0; }
 .home-side-block { display: flex; flex-direction: column; gap: 10px; }
-.home-side-title { font-family: 'Orbitron', sans-serif; font-size: 8px; letter-spacing: 3px; color: var(--t2); }
+.home-side-title { font-family: 'Orbitron', sans-serif; font-size: 9px; letter-spacing: 3px; color: var(--t2); }
 .legend-col { display: flex; flex-direction: column; gap: 8px; font-family: 'Space Mono', monospace; font-size: 9.5px; letter-spacing: 1px; color: var(--t1); }
 .legend-col .legend-item { gap: 9px; }
 .layer-toggles { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -563,7 +563,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
       </section>
       <section class="list-section" style="padding-top:0">
         <div class="list-header" style="flex-wrap:wrap;gap:10px">
-          <div class="eyebrow" style="margin:0">ALL TRACKED EVENTS <span id="ccCardCount" style="color:var(--t2);font-size:8px"></span></div>
+          <div class="eyebrow" style="margin:0">ALL TRACKED EVENTS <span id="ccCardCount" style="color:var(--t2);font-size:9px"></span></div>
           <div class="controls" style="flex-wrap:wrap;gap:7px">
             <button class="filter-btn" id="btnCCHighlightedOnly">★ HIGHLIGHTED ONLY</button>
             <div class="sort-wrap">YEAR:

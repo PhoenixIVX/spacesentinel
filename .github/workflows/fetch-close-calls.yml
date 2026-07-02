@@ -32,5 +32,11 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "Update close-call data ($(date -u +%Y-%m-%d))"
-            git push
+            for attempt in 1 2 3; do
+              git pull --rebase origin main
+              git push && break || {
+                [ $attempt -eq 3 ] && echo "Push failed after 3 attempts" && exit 1
+                sleep $((attempt * 10))
+              }
+            done
           fi

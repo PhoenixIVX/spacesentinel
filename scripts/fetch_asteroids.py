@@ -81,6 +81,13 @@ def main():
     records = sorted(all_records.values(), key=lambda r: r['date'])
     print(f'  {len(records)} records total across 28-day window')
 
+    window_end_expected = date_str(today + timedelta(days=27))
+    latest = records[-1]['date'] if records else ''
+    if len(records) < 20 or latest < window_end_expected:
+        print(f'ERROR: Incomplete window ({len(records)} records, latest {latest}). '
+              f'Aborting to preserve existing data.')
+        raise SystemExit(1)
+
     window_start = date_str(today)
     window_end   = date_str(today + timedelta(days=28))
     output = {
