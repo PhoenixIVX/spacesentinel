@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""
+Space Sentinel — close-call alert sender.
+
+"""
 import json
 import math
 import os
@@ -9,7 +13,8 @@ import urllib.parse
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-import httpx   
+import httpx  
+
 
 SUPABASE_URL        = os.environ['SUPABASE_URL'].rstrip('/')
 SUPABASE_SERVICE_KEY = os.environ['SUPABASE_SERVICE_KEY']   # bypasses RLS
@@ -33,7 +38,7 @@ def apparent_mag(h: float, miss_km: float, is_comet: bool) -> float:
     if is_comet:
         return h + 5 * math.log10(delta_au) + 10 * math.log10(r_au)
     else:
-        phase_correction = 0.04 * 45  
+        phase_correction = 0.04 * 45 
         return h + 5 * math.log10(r_au * delta_au) + phase_correction
 
 def tier_for_mag(mag: float) -> dict:
@@ -46,7 +51,7 @@ def subscriber_tier_index(threshold_tier: str) -> int:
     try:
         return TIER_ORDER.index(threshold_tier)
     except ValueError:
-        return TIER_ORDER.index('telescope')  
+        return TIER_ORDER.index('telescope')   # sensible default
 
 def object_meets_threshold(obj: dict, thresholds: dict) -> bool:
     """True if this close-approach object meets the subscriber's thresholds."""
@@ -64,7 +69,7 @@ def object_meets_threshold(obj: dict, thresholds: dict) -> bool:
         miss_km = (obj.get('dist', 0) * AU_KM)
 
     if h is None:
-        return False  
+        return False 
 
     mag = apparent_mag(float(h), float(miss_km), is_comet)
 
@@ -130,9 +135,10 @@ def dist_plain_english(miss_ld) -> str:
     if ld < 20:   return f'roughly {ld:.0f}\u00d7 the Moon\u2019s distance'
     return f'{ld:.0f} lunar distances \u2014 a comfortable miss'
 
-def render_email(subscriber: dict, objects: list, reminder_label: str = '') -> tuple[str, str]:
+def render_email(subscriber: dict, objects: list, reminder_label: str = '', showers: list = None) -> tuple[str, str]:
     unsub_token = subscriber['token']
-    unsub_url   = f'{SITE_URL}/unsubscribe?token={unsub_token}'
+    manage_url  = f'{SITE_URL}/preferences.html?token={unsub_token}'
+    showers = showers or []
     rows = ''
     for obj in objects:
         h       = obj.get('h') or obj.get('magnitude')
@@ -161,11 +167,48 @@ def render_email(subscriber: dict, objects: list, reminder_label: str = '') -> t
           <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#9cc4e8">{tier}{caveat}</td>
           <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#3a6080;white-space:nowrap">mag {mag_str}</td>
         </tr>"""
-    count = len(objects)
+    shower_rows = ''
+    for sh in showers:
+        hemi_label = {'N':'Northern hemisphere','S':'Southern hemisphere','B':'Both hemispheres'}[sh['hemi']]
+        shower_rows += f"""
+        <tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #0c1e38"><strong style="color:#00e890">☄ {sh['name']}</strong></td>
+          <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#3a6080;white-space:nowrap">{sh['peak_date']}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#00c0ff;white-space:nowrap">~{sh['zhr']} meteors/hr<br><span style="color:#3a6080;font-size:9px">under perfect conditions</span></td>
+          <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#9cc4e8">Naked eye · {hemi_label}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #0c1e38;color:#3a6080;white-space:nowrap">no gear needed</td>
+        </tr>"""
+
+    obj_count = len(objects)
+    sh_count  = len(showers)
+    total     = obj_count + sh_count
+    parts = []
+    if obj_count: parts.append(f'{obj_count} close approach{"es" if obj_count != 1 else ""}')
+    if sh_count:  parts.append(f'{sh_count} meteor shower{"s" if sh_count != 1 else ""}')
+    header_line = ' and '.join(parts)
+
     if reminder_label:
-        subject = f'Space Sentinel {reminder_label}: {count} close approach{"es" if count != 1 else ""} coming up'
+        subject = f'Space Sentinel {reminder_label}: {header_line} coming up'
+        intro   = f'{header_line} matching your preferences will happen in the coming days.'
     else:
-        subject = f'Space Sentinel: {count} close approach{"es" if count != 1 else ""} in the next 30 days'
+        subject = f'Space Sentinel: {header_line} in the next 30 days'
+        intro   = f'{header_line} matching your preferences are coming up.'
+
+    table_html = ''
+    if rows or shower_rows:
+        table_html = f"""
+              <table width="100%" cellpadding="0" cellspacing="0" style="font-size:11px">
+                <tr style="background:#0a1422">
+                  <th style="padding:8px 14px;text-align:left;color:#3a6080;letter-spacing:1.5px">EVENT</th>
+                  <th style="padding:8px 14px;text-align:left;color:#3a6080;letter-spacing:1.5px">DATE</th>
+                  <th style="padding:8px 14px;text-align:left;color:#3a6080;letter-spacing:1.5px">DETAIL</th>
+                  <th style="padding:8px 14px;text-align:left;color:#3a6080;letter-spacing:1.5px">VISIBILITY</th>
+                  <th style="padding:8px 14px;text-align:left;color:#3a6080;letter-spacing:1.5px">NOTES</th>
+                </tr>
+                {rows}
+                {shower_rows}
+              </table>"""
+
     html = f"""
     <!DOCTYPE html><html><head><meta charset="UTF-8"></head>
     <body style="margin:0;padding:0;background:#050a12;font-family:'Courier New',monospace;color:#b8d8f8">
@@ -174,29 +217,17 @@ def render_email(subscriber: dict, objects: list, reminder_label: str = '') -> t
           <table width="600" cellpadding="0" cellspacing="0" style="background:#070d1a;border:1px solid #0c1e38;max-width:600px">
             <tr><td style="padding:24px 28px;border-bottom:1px solid #0c1e38">
               <div style="font-size:18px;font-weight:700;color:#00c0ff;letter-spacing:4px">◈ SPACE SENTINEL</div>
-              <div style="font-size:9px;color:#3a6080;letter-spacing:3px;margin-top:4px">CLOSE-CALL ALERT DIGEST</div>
+              <div style="font-size:9px;color:#3a6080;letter-spacing:3px;margin-top:4px">{reminder_label.upper() if reminder_label else 'ALERT DIGEST'}</div>
             </td></tr>
             <tr><td style="padding:20px 28px">
-              <p style="margin:0 0 16px;color:#9cc4e8;font-size:12px;line-height:1.8">
-                {count} object{"s" if count != 1 else ""} matching your alert threshold
-                will make close approaches to Earth in the next 30 days.
-              </p>
-              <table width="100%" cellpadding="0" cellspacing="0" style="font-size:11px">
-                <tr style="background:#0a1422">
-                  <th style="padding:8px 14px;text-align:left;color:#3a6080;letter-spacing:1.5px">OBJECT</th>
-                  <th style="padding:8px 14px;text-align:left;color:#3a6080;letter-spacing:1.5px">DATE</th>
-                  <th style="padding:8px 14px;text-align:left;color:#3a6080;letter-spacing:1.5px">DISTANCE</th>
-                  <th style="padding:8px 14px;text-align:left;color:#3a6080;letter-spacing:1.5px">VISIBILITY</th>
-                  <th style="padding:8px 14px;text-align:left;color:#3a6080;letter-spacing:1.5px">MAG</th>
-                </tr>
-                {rows}
-              </table>
+              <p style="margin:0 0 16px;color:#9cc4e8;font-size:12px;line-height:1.8">{intro}</p>
+              {table_html}
             </td></tr>
             <tr><td style="padding:16px 28px;border-top:1px solid #0c1e38">
               <p style="margin:0;font-size:9px;color:#162840;letter-spacing:1px;line-height:1.8">
                 Magnitude estimates are approximate. Comet brightness is inherently uncertain.<br>
                 <a href="{SITE_URL}" style="color:#3a6080">View on Space Sentinel</a> &nbsp;·&nbsp;
-                <a href="{unsub_url}" style="color:#3a6080">Unsubscribe</a>
+                <a href="{manage_url}" style="color:#3a6080">Manage preferences or unsubscribe</a>
               </p>
             </td></tr>
           </table>
@@ -238,6 +269,7 @@ def main():
         print('Nothing to alert on — exiting.')
         return
 
+    # 3. Load verified active subscribers
     subscribers = supa_get('subscribers', {
         'select':       'id,email,token,thresholds',
         'verified':     'eq.true',
@@ -255,10 +287,46 @@ def main():
         except (KeyError, ValueError):
             return None
 
+    METEOR_SHOWERS = [
+        {'id':'quadrantids',       'name':'Quadrantids',              'peak':(1,3),   'zhr':110,'hemi':'N'},
+        {'id':'lyrids',            'name':'Lyrids',                   'peak':(4,22),  'zhr':18, 'hemi':'N'},
+        {'id':'eta_aquariids',     'name':'Eta Aquariids',            'peak':(5,6),   'zhr':50, 'hemi':'S'},
+        {'id':'s_delta_aquariids', 'name':'Southern Delta Aquariids', 'peak':(7,30),  'zhr':25, 'hemi':'S'},
+        {'id':'perseids',          'name':'Perseids',                 'peak':(8,12),  'zhr':100,'hemi':'N'},
+        {'id':'orionids',          'name':'Orionids',                 'peak':(10,21), 'zhr':20, 'hemi':'B'},
+        {'id':'s_taurids',         'name':'Southern Taurids',         'peak':(11,5),  'zhr':7,  'hemi':'B'},
+        {'id':'n_taurids',         'name':'Northern Taurids',         'peak':(11,12), 'zhr':5,  'hemi':'B'},
+        {'id':'leonids',           'name':'Leonids',                  'peak':(11,17), 'zhr':15, 'hemi':'B'},
+        {'id':'geminids',          'name':'Geminids',                 'peak':(12,14), 'zhr':150,'hemi':'B'},
+        {'id':'ursids',            'name':'Ursids',                   'peak':(12,22), 'zhr':10, 'hemi':'N'},
+    ]
+
+    def next_shower_peak(sh):
+        y = now.year
+        d = datetime(y, sh['peak'][0], sh['peak'][1], tzinfo=timezone.utc)
+        if (d - now).days < -1:
+            d = datetime(y + 1, sh['peak'][0], sh['peak'][1], tzinfo=timezone.utc)
+        return d
+
+    def shower_matches_prefs(sh, thresholds):
+        if not thresholds.get('include_meteors', True):
+            return False
+        sub_hemi = thresholds.get('meteor_hemisphere', 'both')
+        if sub_hemi == 'both' or sh['hemi'] == 'B':
+            return True
+        return sh['hemi'] == sub_hemi
+
+    upcoming_showers = []
+    for sh in METEOR_SHOWERS:
+        peak = next_shower_peak(sh)
+        d_until = (peak - now).days
+        if 0 <= d_until <= LOOK_AHEAD_DAYS:
+            upcoming_showers.append({**sh, 'peak_date': peak.date().isoformat(), 'days_until': d_until})
+
     passes = [
-        ('close_approach', None,  ''),
-        ('30_day_warning', 30,    '30-day heads-up'),
-        ('7_day_warning',  7,     '7-day reminder'),
+        ('close_approach', None,  '',                None),
+        ('30_day_warning', 30,    '30-day heads-up', 'reminders_30d'),
+        ('7_day_warning',  7,     '7-day reminder',  'reminders_7d'),
     ]
 
     sent_total = 0
@@ -266,15 +334,25 @@ def main():
         sid        = sub['id']
         thresholds = sub.get('thresholds') or {}
         qualifying = [obj for obj in upcoming if object_meets_threshold(obj, thresholds)]
-        if not qualifying:
-            continue
 
-        for alert_type, days_target, label in passes:
+        for alert_type, days_target, label, reminder_key in passes:
+            if reminder_key is not None and not thresholds.get(reminder_key, True):
+                continue
+
             if days_target is None:
-                batch = qualifying
+                obj_batch = qualifying
             else:
-                batch = [o for o in qualifying if (du := days_until(o)) is not None and abs(du - days_target) <= 1]
-            if not batch:
+                obj_batch = [o for o in qualifying if (du := days_until(o)) is not None and abs(du - days_target) <= 1]
+
+            if days_target is None:
+                shower_batch = []
+            else:
+                shower_batch = [
+                    sh for sh in upcoming_showers
+                    if shower_matches_prefs(sh, thresholds) and abs(sh['days_until'] - days_target) <= 1
+                ]
+
+            if not obj_batch and not shower_batch:
                 continue
 
             already = set()
@@ -286,11 +364,12 @@ def main():
             for row in logs:
                 already.add((row['object_des'], row['approach_date']))
 
-            new_objects = [o for o in batch if obj_key(o) not in already]
-            if not new_objects:
+            new_objects = [o for o in obj_batch if obj_key(o) not in already]
+            new_showers = [sh for sh in shower_batch if (sh['id'], sh['peak_date']) not in already]
+            if not new_objects and not new_showers:
                 continue
 
-            subject, html = render_email(sub, new_objects, reminder_label=label)
+            subject, html = render_email(sub, new_objects, reminder_label=label, showers=new_showers)
             if send_email(sub['email'], subject, html):
                 sent_total += 1
                 for obj in new_objects:
@@ -304,10 +383,21 @@ def main():
                         })
                     except Exception as e:
                         print(f'  Warning: failed to log {alert_type} for {obj_key(obj)[0]}: {e}')
-                print(f'  Sent {alert_type} to {sub["email"]}: {len(new_objects)} object(s)')
+                for sh in new_showers:
+                    try:
+                        supa_post('alert_log', {
+                            'subscriber_id': sid,
+                            'object_des':    sh['id'],
+                            'approach_date': sh['peak_date'],
+                            'alert_type':    alert_type,
+                            'email_status':  'sent',
+                        })
+                    except Exception as e:
+                        print(f'  Warning: failed to log shower {sh["id"]}: {e}')
+                print(f'  Sent {alert_type} to {sub["email"]}: {len(new_objects)} object(s), {len(new_showers)} shower(s)')
             else:
                 print(f'  Failed {alert_type} to {sub["email"]}')
-            time.sleep(0.25)  
+            time.sleep(0.25)   
 
     print(f'Done. Sent {sent_total} email(s).')
 
