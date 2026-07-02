@@ -33,12 +33,14 @@ VIS_TIERS = [
 TIER_ORDER = [t['id'] for t in VIS_TIERS]
 
 def apparent_mag(h: float, miss_km: float, is_comet: bool) -> float:
+    if not miss_km or miss_km <= 0:
+        return None
     delta_au = miss_km / AU_KM
     r_au     = 1.0
     if is_comet:
         return h + 5 * math.log10(delta_au) + 10 * math.log10(r_au)
     else:
-        phase_correction = 0.04 * 45 
+        phase_correction = 0.04 * 45
         return h + 5 * math.log10(r_au * delta_au) + phase_correction
 
 def tier_for_mag(mag: float) -> dict:
@@ -69,9 +71,18 @@ def object_meets_threshold(obj: dict, thresholds: dict) -> bool:
         miss_km = (obj.get('dist', 0) * AU_KM)
 
     if h is None:
-        return False 
+        return False   # can't classify without magnitude
 
-    mag = apparent_mag(float(h), float(miss_km), is_comet)
+    try:
+        miss_km_val = float(miss_km)
+    except (TypeError, ValueError):
+        return False
+    if not miss_km_val or miss_km_val <= 0:
+        return False
+
+    mag = apparent_mag(float(h), miss_km_val, is_comet)
+    if mag is None:
+        return False
 
     tier_id   = tier_for_mag(mag)['id']
     sub_limit = thresholds.get('visibility_tier', 'telescope')
