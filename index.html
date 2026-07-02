@@ -1031,7 +1031,7 @@ function showAlertSignup() {
     <div id="turnstile-widget"></div>
     <button class="detail-link" style="cursor:pointer;width:100%;text-align:center" onclick="submitAlertSignup()">SUBSCRIBE →</button>
     <div id="alertSignupMsg" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--t2);display:none"></div>
-    <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">You'll receive a verification email. Every alert includes a manage-preferences link if you change your mind.</div></div>`);
+    <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">You'll receive a verification email. It includes a link to manage your preferences straight away.</div></div>`);
 
   if (window.turnstile) turnstile.render('#turnstile-widget', { sitekey: CONFIG.TURNSTILE_SITE_KEY });
   const metBox = document.getElementById('alertMet');
@@ -1069,7 +1069,7 @@ async function submitAlertSignup() {
   try {
     const res = await fetch(`${CONFIG.SUPABASE_URL}/functions/v1/subscribe`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}` },
       body: JSON.stringify({
         email,
         turnstile_token: token,
