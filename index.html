@@ -326,6 +326,9 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
           <div class="solar-toolbar">
             <button class="filter-btn active" id="btnPlayPause">⏸ PAUSE</button>
             <select class="sw-select" id="speedSelect">
+              <option value="0.0000116">REAL TIME</option>
+              <option value="0.0833">2 HOURS / SEC</option>
+              <option value="0.1667">4 HOURS / SEC</option>
               <option value="1">1 DAY / SEC</option>
               <option value="7" selected>1 WEEK / SEC</option>
               <option value="30">1 MONTH / SEC</option>
@@ -800,14 +803,15 @@ async function doViewFromHere(pid, elEncoded, approachDate) {
       : 'Not visible — below the horizon for your location on this date';
     const dirStr  = isVisible ? compassDirection(best.az) : '—';
     const fistStr = isVisible ? fistWidths(best.alt) : '';
+    const peakStr = isVisible ? hStr(best.hour) : '';
     el.innerHTML = `
-      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--t2);margin-bottom:10px">📍 Near <strong style="color:var(--read)">${place}</strong> · ${approachDate} UTC</div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--t2);margin-bottom:10px">📍 Near <strong style="color:var(--read)">${place}</strong> · ${approachDate}</div>
       ${isVisible ? `
       <div style="background:var(--card);border:1px solid var(--b2);padding:14px 16px;margin-bottom:10px">
         <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--t2);letter-spacing:2px;margin-bottom:8px">HOW TO FIND IT</div>
         <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--t1);line-height:2">
-          Face <strong style="color:var(--c);font-size:15px">${dirStr}</strong><br>
-          Look <strong style="color:var(--c)">${fistStr}</strong><br>
+          Face <strong style="color:var(--c);font-size:15px">${dirStr}</strong> <span style="color:var(--t2);font-size:10px">Az ${Math.round(best.az)}°</span><br>
+          At peak around <strong style="color:var(--c)">${peakStr}</strong> — ${fistStr} <span style="color:var(--t2);font-size:10px">Alt ${Math.round(best.alt)}°</span><br>
           <span style="color:var(--read)">${windowStr}</span><br>
           <span style="color:var(--t2);font-size:10px">${altDesc(best.alt)}</span><br>
           <span style="color:var(--read);font-size:10px">Tip: a clenched fist held at arm's length covers roughly 10° of sky.</span>
@@ -976,6 +980,8 @@ const GLOSSARY = {
   MOID: { term: 'MOID (Minimum Orbit Intersection Distance)', def: 'The closest distance between two orbits \u2014 here, an object\u2019s orbit and Earth\u2019s \u2014 regardless of whether the two bodies are actually near that point at the same time. A small MOID is a precondition for PHA status, not a prediction of an actual close pass.' },
   FEATURED: { term: 'Featured Event', def: 'A small, hand-picked set of historically or scientifically significant close approaches \u2014 famous flybys, notable impacts, landmark comet returns \u2014 layered on top of the automatic PHA-based flagging, since fame and hazard classification don\u2019t always line up.' },
   IMPACT: { term: 'Impact Event', def: 'An object that actually entered Earth\u2019s atmosphere, rather than passing by. NASA/JPL\u2019s close-approach database specifically excludes confirmed impacts, so these are added here by hand.' },
+  ZHR: { term: 'Zenithal Hourly Rate (ZHR)', def: 'The number of meteors a single observer would see per hour under perfect conditions \u2014 dark rural skies, no Moon, and the shower\'s radiant point directly overhead. Real-world rates are usually lower, but the brightest meteors punch through even from suburban skies.' },
+  RADIANT: { term: 'Radiant', def: 'The point in the sky a meteor shower appears to stream outward from. Named after the constellation it sits in \u2014 so the Perseids\' radiant is in Perseus, the Leonids\' in Leo. The higher the radiant is above your horizon, the more meteors you\'ll see.' },
 };
 function showAlertSignup() {
   const supabaseReady = CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY;
@@ -1360,7 +1366,7 @@ function showHomeDetail(hit) {
           <div class="detail-field"><div class="df-label">DIAMETER</div><div class="df-value" style="font-size:12px">${p.facts.diameter}</div></div>
           <div class="detail-field"><div class="df-label">MOONS</div><div class="df-value" style="font-size:12px">${p.facts.moons}</div></div>
           <div class="detail-field"><div class="df-label">ORBITAL PERIOD</div><div class="df-value" style="font-size:12px">${fmt(p.el.period/365.25,2)} yrs</div></div>
-          <div class="detail-field"><div class="df-label">SEMI-MAJOR AXIS</div><div class="df-value" style="font-size:12px">${fmt(p.el.a,3)} AU</div></div>
+          <div class="detail-field"><div class="df-label">${gloss('SEMI-MAJOR AXIS','SMA')}</div><div class="df-value" style="font-size:12px">${fmt(p.el.a,3)} AU</div></div>
         </div>
       </div>
       ${p.name !== 'Earth' ? viewFromHereSection(p.name, new Date(simTime).toISOString().slice(0,10), p.el) : ''}`);
@@ -1586,7 +1592,7 @@ function renderAstObjects(objs) {
         <div class="obj-datum"><div class="datum-label">MISS DISTANCE</div><div class="datum-val ${o.hazardous?'h':'c'}">${fmt(o.miss_ld,2)}<span class="u"> LD</span></div></div>
         <div class="obj-datum"><div class="datum-label">VELOCITY</div><div class="datum-val">${fmt(o.vel_kms,1)}<span class="u"> km/s</span></div></div>
         <div class="obj-datum"><div class="datum-label">EST. DIAMETER</div><div class="datum-val">${Math.round(o.diam_avg)}<span class="u"> m</span></div></div>
-        <div class="obj-datum"><div class="datum-label">MAGNITUDE</div><div class="datum-val">${fmt(o.magnitude,1)}<span class="u"> H</span></div></div>
+        <div class="obj-datum"><div class="datum-label">${gloss('MAGNITUDE','H')}</div><div class="datum-val">${fmt(o.magnitude,1)}<span class="u"> H</span></div></div>
       </div>
       <div class="obj-footer">APPROACH: ${o.date}</div>
     </div>`).join('');
@@ -1624,7 +1630,7 @@ function showAstDetail(obj) {
     </div></div>
     <div><div class="detail-sep">PHYSICAL PROPERTIES</div><div class="detail-grid">
       <div class="detail-field"><div class="df-label">EST. DIAMETER</div><div class="df-value" style="font-size:12px">${diamFmt}</div></div>
-      <div class="detail-field"><div class="df-label">ABS. MAGNITUDE</div><div class="df-value">${fmt(obj.magnitude,1)}<span class="u"> H</span></div></div>
+      <div class="detail-field"><div class="df-label">${gloss('ABS. MAGNITUDE','H')}</div><div class="df-value">${fmt(obj.magnitude,1)}<span class="u"> H</span></div></div>
       <div class="detail-field"><div class="df-label">VELOCITY (km/h)</div><div class="df-value" style="font-size:11px">${velKmh}<span class="u"> km/h</span></div></div>
       <div class="detail-field"><div class="df-label">NASA JPL ID</div><div class="df-value" style="font-size:11px">${obj.id}</div></div>
     </div></div>
@@ -1835,8 +1841,8 @@ function renderComObjects(list) {
       <div class="obj-data">
         <div class="obj-datum"><div class="datum-label">APPROACH DIST.</div><div class="datum-val ${c.notable?'g':'c'}">${fmt(c.dist,3)}<span class="u"> AU</span></div></div>
         <div class="obj-datum"><div class="datum-label">VELOCITY</div><div class="datum-val">${fmt(c.v_rel,1)}<span class="u"> km/s</span></div></div>
-        <div class="obj-datum"><div class="datum-label">NUCLEUS</div><div class="datum-val">${c.diameter ? fmt(c.diameter,2)+'<span class="u"> km</span>' : '—'}</div></div>
-        <div class="obj-datum"><div class="datum-label">MAGNITUDE</div><div class="datum-val">${c.h!==null?fmt(c.h,1):'—'}<span class="u"> H</span></div></div>
+        <div class="obj-datum"><div class="datum-label">${gloss('NUCLEUS','NUCLEUS')}</div><div class="datum-val">${c.diameter ? fmt(c.diameter,2)+'<span class="u"> km</span>' : '—'}</div></div>
+        <div class="obj-datum"><div class="datum-label">${gloss('MAGNITUDE','H')}</div><div class="datum-val">${c.h!==null?fmt(c.h,1):'—'}<span class="u"> H</span></div></div>
       </div>
       <div class="obj-footer">APPROACH: ${c.dateOnly}</div>
     </div>`).join('');
@@ -2033,8 +2039,8 @@ function meteorCardHTML(sh) {
       <div class="obj-top"><div class="obj-name">${sh.name}</div><div class="obj-badge ${active ? 'active-c' : 'comet'}">${active ? '☄ ACTIVE' : 'SHOWER'}</div></div>
       <div class="obj-data">
         <div class="obj-datum"><div class="datum-label">PEAK</div><div class="datum-val" style="font-size:12px">${MONTH_NAMES[sh.peakMonth-1]} ${sh.peakDay}</div></div>
-        <div class="obj-datum"><div class="datum-label">RATE (IDEAL)</div><div class="datum-val ${sh.zhr >= 60 ? 'g' : 'c'}">${sh.zhr}<span class="u">/hr</span></div></div>
-        <div class="obj-datum"><div class="datum-label">LOOK TOWARD</div><div class="datum-val" style="font-size:10px">${sh.radiant.split(' (')[0]}</div></div>
+        <div class="obj-datum"><div class="datum-label">${gloss('RATE (IDEAL)','ZHR')}</div><div class="datum-val ${sh.zhr >= 60 ? 'g' : 'c'}">${sh.zhr}<span class="u">/hr</span></div></div>
+        <div class="obj-datum"><div class="datum-label">${gloss('LOOK TOWARD','RADIANT')}</div><div class="datum-val" style="font-size:10px">${sh.radiant.split(' (')[0]}</div></div>
         <div class="obj-datum"><div class="datum-label">VISIBILITY</div><div class="datum-val" style="font-size:9px">${hemiLabel}</div></div>
       </div>
       <div class="obj-footer">${countdown}</div>
@@ -2083,7 +2089,7 @@ function showMeteorDetail(id) {
     <div class="detail-prose">${sh.note}</div>
     <div><div class="detail-sep">THIS YEAR\u2019S SHOWING</div><div class="detail-grid">
       <div class="detail-field"><div class="df-label">PEAK NIGHT</div><div class="df-value" style="font-size:13px">${peak.toISOString().slice(0,10)}</div></div>
-      <div class="detail-field"><div class="df-label">RATE AT PEAK (IDEAL)</div><div class="df-value ${sh.zhr>=60?'g':'c'}">${sh.zhr}<span class="u">/hr</span></div></div>
+      <div class="detail-field"><div class="df-label">${gloss('RATE AT PEAK (IDEAL)','ZHR')}</div><div class="df-value ${sh.zhr>=60?'g':'c'}">${sh.zhr}<span class="u">/hr</span></div></div>
       <div class="detail-field"><div class="df-label">ACTIVE WINDOW</div><div class="df-value" style="font-size:12px">\u00b1${Math.round(sh.spanDays/2)} days</div></div>
       <div class="detail-field"><div class="df-label">SOURCE</div><div class="df-value" style="font-size:10px">${sh.parent}</div></div>
     </div></div>
