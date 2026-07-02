@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/astronomy-engine/2.1.19/astronomy.browser.min.js" crossorigin="anonymous"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1027,10 +1028,12 @@ function showAlertSignup() {
         <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--t2);margin-top:6px">Uncheck both to only get first-sighting digests.</div>
       </div>
     </div>
+    <div id="turnstile-widget"></div>
     <button class="detail-link" style="cursor:pointer;width:100%;text-align:center" onclick="submitAlertSignup()">SUBSCRIBE →</button>
     <div id="alertSignupMsg" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--t2);display:none"></div>
     <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">You'll receive a verification email. Every alert includes a manage-preferences link if you change your mind.</div></div>`);
 
+  if (window.turnstile) turnstile.render('#turnstile-widget', { sitekey: CONFIG.TURNSTILE_SITE_KEY });
   const metBox = document.getElementById('alertMet');
   const hemiField = document.getElementById('hemiField');
   if (metBox && hemiField) {
@@ -1056,18 +1059,20 @@ async function submitAlertSignup() {
     if (msg) { msg.textContent = '⚠ Pick at least one thing to be alerted about.'; msg.style.display = 'block'; msg.style.color = 'var(--h)'; }
     return;
   }
+  const widget = document.getElementById('turnstile-widget');
+  const token = window.turnstile ? turnstile.getResponse(widget) : null;
+  if (!token) {
+    if (msg) { msg.textContent = '⚠ Please complete the verification check.'; msg.style.display = 'block'; msg.style.color = 'var(--h)'; }
+    return;
+  }
   if (msg) { msg.textContent = 'Subscribing…'; msg.style.display = 'block'; msg.style.color = 'var(--t2)'; }
   try {
-    const res = await fetch(`${CONFIG.SUPABASE_URL}/rest/v1/subscribers`, {
+    const res = await fetch(`${CONFIG.SUPABASE_URL}/functions/v1/subscribe`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey':       CONFIG.SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
-        'Prefer': 'return=minimal',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email,
+        turnstile_token: token,
         thresholds: {
           visibility_tier:   tier,
           include_asteroids: ast,
@@ -1081,10 +1086,12 @@ async function submitAlertSignup() {
         },
       }),
     });
-    if (res.status === 409) {
+    const data = await res.json().catch(() => ({}));
+    if (data.status === 'already_subscribed') {
       if (msg) { msg.textContent = '✓ This email is already subscribed. Check your inbox for the link to manage preferences.'; msg.style.color = 'var(--g)'; }
     } else if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+      if (window.turnstile) turnstile.reset(widget);
+      throw new Error(data.error || `HTTP ${res.status}`);
     } else {
       if (msg) { msg.textContent = '✓ Subscribed! Check your inbox for a verification email.'; msg.style.color = 'var(--g)'; }
     }
@@ -1467,6 +1474,7 @@ const CONFIG = {
 
   SUPABASE_URL:       'https://wudepgxsdilwigdsraxg.supabase.co',
   SUPABASE_ANON_KEY:  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1ZGVwZ3hzZGlsd2lnZHNyYXhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTgxMzIsImV4cCI6MjA5ODQzNDEzMn0._3t2BECeOC4o0Arc2IN6PPsbx72QHlUWbXkhnTSKlug',
+  TURNSTILE_SITE_KEY: '0x4AAAAAADurONeNbzMlFgat',
 };
 let allAsteroids = [];
 let asteroidsLoaded = false;
