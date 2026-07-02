@@ -1,0 +1,136 @@
+{
+  "showers": [
+    {
+      "id": "quadrantids",
+      "name": "Quadrantids",
+      "peakMonth": 1,
+      "peakDay": 3,
+      "spanDays": 3,
+      "zhr": 110,
+      "hemi": "N",
+      "radiant": "Boötes (northern sky)",
+      "parent": "Asteroid 2003 EH1",
+      "note": "One of the strongest showers of the year, but with a very sharp peak lasting only about six hours — catch the right night or miss it entirely. Best after midnight in the northern sky."
+    },
+    {
+      "id": "lyrids",
+      "name": "Lyrids",
+      "peakMonth": 4,
+      "peakDay": 22,
+      "spanDays": 5,
+      "zhr": 18,
+      "hemi": "N",
+      "radiant": "Lyra (near the bright star Vega)",
+      "parent": "Comet C/1861 G1 Thatcher",
+      "note": "The oldest recorded meteor shower — Chinese observations date back to 687 BC. Modest rates, but occasional outbursts of up to 100 per hour have been recorded."
+    },
+    {
+      "id": "eta_aquariids",
+      "name": "Eta Aquariids",
+      "peakMonth": 5,
+      "peakDay": 6,
+      "spanDays": 10,
+      "zhr": 50,
+      "hemi": "S",
+      "radiant": "Aquarius",
+      "parent": "Halley’s Comet (1P)",
+      "note": "Debris from Halley’s Comet. Strongly favours the southern hemisphere and the tropics, where it’s one of the best showers of the year. Northern observers see far fewer, low on the horizon before dawn."
+    },
+    {
+      "id": "s_delta_aquariids",
+      "name": "Southern Delta Aquariids",
+      "peakMonth": 7,
+      "peakDay": 30,
+      "spanDays": 12,
+      "zhr": 25,
+      "hemi": "S",
+      "radiant": "Aquarius",
+      "parent": "Likely Comet 96P/Machholz",
+      "note": "A steady mid-year shower best from the southern hemisphere. Lacks a sharp peak — decent rates across a couple of weeks, which makes planning easier."
+    },
+    {
+      "id": "perseids",
+      "name": "Perseids",
+      "peakMonth": 8,
+      "peakDay": 12,
+      "spanDays": 14,
+      "zhr": 100,
+      "hemi": "N",
+      "radiant": "Perseus (northeastern sky)",
+      "parent": "Comet 109P/Swift-Tuttle",
+      "note": "The most-watched shower of the year — warm August nights, high rates, and bright, fast meteors that often leave glowing trails. A northern-hemisphere summer classic."
+    },
+    {
+      "id": "orionids",
+      "name": "Orionids",
+      "peakMonth": 10,
+      "peakDay": 21,
+      "spanDays": 10,
+      "zhr": 20,
+      "hemi": "B",
+      "radiant": "Orion (near Betelgeuse)",
+      "parent": "Halley’s Comet (1P)",
+      "note": "Halley’s second gift of the year. Visible from both hemispheres since Orion straddles the celestial equator. Fast meteors, best in the hours before dawn."
+    },
+    {
+      "id": "s_taurids",
+      "name": "Southern Taurids",
+      "peakMonth": 11,
+      "peakDay": 5,
+      "spanDays": 20,
+      "zhr": 7,
+      "hemi": "B",
+      "radiant": "Taurus",
+      "parent": "Comet 2P/Encke",
+      "note": "Low rates but famous for fireballs — unusually bright meteors that can outshine every star in the sky. The long broad peak overlaps its northern twin."
+    },
+    {
+      "id": "n_taurids",
+      "name": "Northern Taurids",
+      "peakMonth": 11,
+      "peakDay": 12,
+      "spanDays": 20,
+      "zhr": 5,
+      "hemi": "B",
+      "radiant": "Taurus",
+      "parent": "Comet 2P/Encke",
+      "note": "Twin stream of the Southern Taurids. When both branches are active in early November, fireball activity noticeably increases — worth a look even with low hourly rates."
+    },
+    {
+      "id": "leonids",
+      "name": "Leonids",
+      "peakMonth": 11,
+      "peakDay": 17,
+      "spanDays": 6,
+      "zhr": 15,
+      "hemi": "B",
+      "radiant": "Leo",
+      "parent": "Comet 55P/Tempel-Tuttle",
+      "note": "Modest in most years, but the source of history’s greatest meteor storms — in 1833 and 1966, rates briefly reached tens of thousands per hour. The next storm window is expected in the 2030s."
+    },
+    {
+      "id": "geminids",
+      "name": "Geminids",
+      "peakMonth": 12,
+      "peakDay": 14,
+      "spanDays": 10,
+      "zhr": 150,
+      "hemi": "B",
+      "radiant": "Gemini (near Castor)",
+      "parent": "Asteroid 3200 Phaethon",
+      "note": "The strongest reliable shower of the year, and unusual for coming from an asteroid rather than a comet. Slow, bright, often colorful meteors. Excellent from both hemispheres — worth braving the December cold."
+    },
+    {
+      "id": "ursids",
+      "name": "Ursids",
+      "peakMonth": 12,
+      "peakDay": 22,
+      "spanDays": 4,
+      "zhr": 10,
+      "hemi": "N",
+      "radiant": "Ursa Minor (near the Little Dipper)",
+      "parent": "Comet 8P/Tuttle",
+      "note": "The year’s quiet closer, visible only from the northern hemisphere since the radiant sits near the pole star. Often overlooked in the post-Geminid lull."
+    }
+  ]
+}

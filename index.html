@@ -1461,6 +1461,7 @@ const CONFIG = {
 
   CLOSE_CALLS_URL:    'data/close-calls-events.json',
   ORBITAL_ELEMENTS_URL: 'data/orbital-elements.json',
+  METEOR_SHOWERS_URL:   'data/meteor-showers.json',
 
   JPL_CAD_URL:        'https://ssd-api.jpl.nasa.gov/cad.api',
 
@@ -1742,6 +1743,16 @@ async function fetchCachedElements() {
   }
 }
 
+let meteorShowers = null;
+let meteorShowersPromise = null;
+function loadMeteorShowers() {
+  if (meteorShowersPromise) return meteorShowersPromise;
+  meteorShowersPromise = fetch(CONFIG.METEOR_SHOWERS_URL)
+    .then(r => r.ok ? r.json() : Promise.reject(`HTTP ${r.status}`))
+    .then(d => { meteorShowers = d.showers; });
+  return meteorShowersPromise;
+}
+
 async function loadComets() {
   cometsLoaded = true;
   setComStatus('LOADING...');
@@ -1957,30 +1968,6 @@ function initComEvents() {
 }
 
 
-const METEOR_SHOWERS = [
-  { id:'quadrantids', name:'Quadrantids', peakMonth:1, peakDay:3,  spanDays:3,  zhr:110, hemi:'N', radiant:'Boötes (northern sky)', parent:'Asteroid 2003 EH1',
-    note:'One of the strongest showers of the year, but with a very sharp peak lasting only about six hours — catch the right night or miss it entirely. Best after midnight in the northern sky.' },
-  { id:'lyrids', name:'Lyrids', peakMonth:4, peakDay:22, spanDays:5, zhr:18, hemi:'N', radiant:'Lyra (near the bright star Vega)', parent:'Comet C/1861 G1 Thatcher',
-    note:'The oldest recorded meteor shower — Chinese observations date back to 687 BC. Modest rates, but occasional outbursts of up to 100 per hour have been recorded.' },
-  { id:'eta_aquariids', name:'Eta Aquariids', peakMonth:5, peakDay:6, spanDays:10, zhr:50, hemi:'S', radiant:'Aquarius', parent:'Halley\u2019s Comet (1P)',
-    note:'Debris from Halley\u2019s Comet. Strongly favours the southern hemisphere and the tropics, where it\u2019s one of the best showers of the year. Northern observers see far fewer, low on the horizon before dawn.' },
-  { id:'s_delta_aquariids', name:'Southern Delta Aquariids', peakMonth:7, peakDay:30, spanDays:12, zhr:25, hemi:'S', radiant:'Aquarius', parent:'Likely Comet 96P/Machholz',
-    note:'A steady mid-year shower best from the southern hemisphere. Lacks a sharp peak — decent rates across a couple of weeks, which makes planning easier.' },
-  { id:'perseids', name:'Perseids', peakMonth:8, peakDay:12, spanDays:14, zhr:100, hemi:'N', radiant:'Perseus (northeastern sky)', parent:'Comet 109P/Swift-Tuttle',
-    note:'The most-watched shower of the year — warm August nights, high rates, and bright, fast meteors that often leave glowing trails. A northern-hemisphere summer classic.' },
-  { id:'orionids', name:'Orionids', peakMonth:10, peakDay:21, spanDays:10, zhr:20, hemi:'B', radiant:'Orion (near Betelgeuse)', parent:'Halley\u2019s Comet (1P)',
-    note:'Halley\u2019s second gift of the year. Visible from both hemispheres since Orion straddles the celestial equator. Fast meteors, best in the hours before dawn.' },
-  { id:'s_taurids', name:'Southern Taurids', peakMonth:11, peakDay:5, spanDays:20, zhr:7, hemi:'B', radiant:'Taurus', parent:'Comet 2P/Encke',
-    note:'Low rates but famous for fireballs — unusually bright meteors that can outshine every star in the sky. The long broad peak overlaps its northern twin.' },
-  { id:'n_taurids', name:'Northern Taurids', peakMonth:11, peakDay:12, spanDays:20, zhr:5, hemi:'B', radiant:'Taurus', parent:'Comet 2P/Encke',
-    note:'Twin stream of the Southern Taurids. When both branches are active in early November, fireball activity noticeably increases — worth a look even with low hourly rates.' },
-  { id:'leonids', name:'Leonids', peakMonth:11, peakDay:17, spanDays:6, zhr:15, hemi:'B', radiant:'Leo', parent:'Comet 55P/Tempel-Tuttle',
-    note:'Modest in most years, but the source of history\u2019s greatest meteor storms — in 1833 and 1966, rates briefly reached tens of thousands per hour. The next storm window is expected in the 2030s.' },
-  { id:'geminids', name:'Geminids', peakMonth:12, peakDay:14, spanDays:10, zhr:150, hemi:'B', radiant:'Gemini (near Castor)', parent:'Asteroid 3200 Phaethon',
-    note:'The strongest reliable shower of the year, and unusual for coming from an asteroid rather than a comet. Slow, bright, often colorful meteors. Excellent from both hemispheres — worth braving the December cold.' },
-  { id:'ursids', name:'Ursids', peakMonth:12, peakDay:22, spanDays:4, zhr:10, hemi:'N', radiant:'Ursa Minor (near the Little Dipper)', parent:'Comet 8P/Tuttle',
-    note:'The year\u2019s quiet closer, visible only from the northern hemisphere since the radiant sits near the pole star. Often overlooked in the post-Geminid lull.' },
-];
 let meteorsRendered = false;
 const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
@@ -2015,13 +2002,13 @@ function renderMeteorCalendar() {
   const todayX = (dayOfYear / 365) * 100;
   html += `<div style="position:absolute;left:${todayX}%;top:0;bottom:0;width:2px;background:var(--c);box-shadow:0 0 8px var(--cg)"></div>`;
   html += `<div style="position:absolute;left:${todayX}%;top:2px;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:7px;color:var(--c);letter-spacing:2px">TODAY</div>`;
-  METEOR_SHOWERS.forEach(sh => {
+  meteorShowers.forEach(sh => {
     const peakDOY = Math.floor((Date.UTC(2025, sh.peakMonth-1, sh.peakDay) - Date.UTC(2025,0,1)) / 86400000);
     const startX = ((peakDOY - sh.spanDays/2) / 365) * 100;
     const w = (sh.spanDays / 365) * 100;
     const intensity = Math.min(1, sh.zhr / 150);
     const active = showerIsActive(sh);
-    html += `<div onclick="showMeteorDetail('${sh.id}')" title="${sh.name} — peak ${MONTH_NAMES[sh.peakMonth-1]} ${sh.peakDay}, ~${sh.zhr}/hr" style="position:absolute;left:${startX}%;width:${Math.max(w,1)}%;top:${22 + (METEOR_SHOWERS.indexOf(sh) % 3) * 16}px;height:11px;background:rgba(0,232,144,${0.15 + intensity*0.55});border:1px solid rgba(0,232,144,${active?0.9:0.35});cursor:pointer;border-radius:2px"></div>`;
+    html += `<div onclick="showMeteorDetail('${sh.id}')" title="${sh.name} — peak ${MONTH_NAMES[sh.peakMonth-1]} ${sh.peakDay}, ~${sh.zhr}/hr" style="position:absolute;left:${startX}%;width:${Math.max(w,1)}%;top:${22 + (meteorShowers.indexOf(sh) % 3) * 16}px;height:11px;background:rgba(0,232,144,${0.15 + intensity*0.55});border:1px solid rgba(0,232,144,${active?0.9:0.35});cursor:pointer;border-radius:2px"></div>`;
   });
   html += `</div>
   <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--t2);margin-top:6px;letter-spacing:1px">BAR BRIGHTNESS = SHOWER STRENGTH · CLICK ANY BAR FOR DETAILS</div>`;
@@ -2049,8 +2036,8 @@ function renderMeteorWorldMap(selectedId) {
   const mapEl = document.getElementById('meteorWorldMap');
   const legEl = document.getElementById('meteorMapLegend');
   if (!mapEl) return;
-  const sh = METEOR_SHOWERS.find(s => s.id === selectedId) || METEOR_SHOWERS.find(showerIsActive) ||
-             METEOR_SHOWERS.slice().sort((a,b) => nextPeakDate(a) - nextPeakDate(b))[0];
+  const sh = meteorShowers.find(s => s.id === selectedId) || meteorShowers.find(showerIsActive) ||
+             meteorShowers.slice().sort((a,b) => nextPeakDate(a) - nextPeakDate(b))[0];
   const nOp = sh.hemi === 'N' ? 0.45 : sh.hemi === 'B' ? 0.35 : 0.10;
   const sOp = sh.hemi === 'S' ? 0.45 : sh.hemi === 'B' ? 0.35 : 0.10;
   const loc = userLocationCache;
@@ -2076,7 +2063,7 @@ function renderMeteorWorldMap(selectedId) {
     ${!userLocationCache ? `<button class="filter-btn" style="margin-top:8px" onclick="getUserLocation().then(()=>renderMeteorWorldMap('${sh.id}'))">📍 SHOW MY LOCATION</button>` : ''}`;
 }
 function showMeteorDetail(id) {
-  const sh = METEOR_SHOWERS.find(s => s.id === id);
+  const sh = meteorShowers.find(s => s.id === id);
   if (!sh) return;
   renderMeteorWorldMap(id);
   const peak = nextPeakDate(sh);
@@ -2104,14 +2091,15 @@ function showMeteorDetail(id) {
     ${!loc ? `<button class="filter-btn" onclick="getUserLocation().then(()=>showMeteorDetail('${id}'))">📍 CHECK VIEWING FROM MY LOCATION</button>` : ''}
     <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">The peak rate assumes perfect conditions: dark rural skies, the radiant overhead, no Moon. Real-world rates are usually lower — but the brightest meteors punch through even suburban light pollution.</div></div>`);
 }
-function renderMeteors() {
+async function renderMeteors() {
   meteorsRendered = true;
+  await loadMeteorShowers();
   renderMeteorCalendar();
-  const upcoming = METEOR_SHOWERS.slice().sort((a,b) => nextPeakDate(a) - nextPeakDate(b)).slice(0,3);
+  const upcoming = meteorShowers.slice().sort((a,b) => nextPeakDate(a) - nextPeakDate(b)).slice(0,3);
   const upEl = document.getElementById('meteorUpcoming');
   if (upEl) upEl.innerHTML = upcoming.map(meteorCardHTML).join('');
   const gridEl = document.getElementById('meteorGrid');
-  if (gridEl) gridEl.innerHTML = METEOR_SHOWERS.slice().sort((a,b) => (a.peakMonth*31+a.peakDay) - (b.peakMonth*31+b.peakDay)).map(meteorCardHTML).join('');
+  if (gridEl) gridEl.innerHTML = meteorShowers.slice().sort((a,b) => (a.peakMonth*31+a.peakDay) - (b.peakMonth*31+b.peakDay)).map(meteorCardHTML).join('');
   renderMeteorWorldMap(null);
 }
 
@@ -2652,6 +2640,7 @@ async function init() {
   initComEvents();
   initCCEvents();
   fetchCachedElements().then(els => { cachedOrbitalElements = els; });
+  loadMeteorShowers();
   await Promise.all([loadAsteroids(), loadComets()]);
 }
 document.addEventListener('DOMContentLoaded', init);

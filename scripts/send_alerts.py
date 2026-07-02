@@ -298,25 +298,18 @@ def main():
         except (KeyError, ValueError):
             return None
 
-    METEOR_SHOWERS = [
-        {'id':'quadrantids',       'name':'Quadrantids',              'peak':(1,3),   'zhr':110,'hemi':'N'},
-        {'id':'lyrids',            'name':'Lyrids',                   'peak':(4,22),  'zhr':18, 'hemi':'N'},
-        {'id':'eta_aquariids',     'name':'Eta Aquariids',            'peak':(5,6),   'zhr':50, 'hemi':'S'},
-        {'id':'s_delta_aquariids', 'name':'Southern Delta Aquariids', 'peak':(7,30),  'zhr':25, 'hemi':'S'},
-        {'id':'perseids',          'name':'Perseids',                 'peak':(8,12),  'zhr':100,'hemi':'N'},
-        {'id':'orionids',          'name':'Orionids',                 'peak':(10,21), 'zhr':20, 'hemi':'B'},
-        {'id':'s_taurids',         'name':'Southern Taurids',         'peak':(11,5),  'zhr':7,  'hemi':'B'},
-        {'id':'n_taurids',         'name':'Northern Taurids',         'peak':(11,12), 'zhr':5,  'hemi':'B'},
-        {'id':'leonids',           'name':'Leonids',                  'peak':(11,17), 'zhr':15, 'hemi':'B'},
-        {'id':'geminids',          'name':'Geminids',                 'peak':(12,14), 'zhr':150,'hemi':'B'},
-        {'id':'ursids',            'name':'Ursids',                   'peak':(12,22), 'zhr':10, 'hemi':'N'},
-    ]
+    if not os.path.exists('data/meteor-showers.json'):
+        print('Warning: data/meteor-showers.json not found, skipping meteor alerts.')
+        METEOR_SHOWERS = []
+    else:
+        with open('data/meteor-showers.json') as f:
+            METEOR_SHOWERS = json.load(f)['showers']
 
     def next_shower_peak(sh):
         y = now.year
-        d = datetime(y, sh['peak'][0], sh['peak'][1], tzinfo=timezone.utc)
+        d = datetime(y, sh['peakMonth'], sh['peakDay'], tzinfo=timezone.utc)
         if (d - now).days < -1:
-            d = datetime(y + 1, sh['peak'][0], sh['peak'][1], tzinfo=timezone.utc)
+            d = datetime(y + 1, sh['peakMonth'], sh['peakDay'], tzinfo=timezone.utc)
         return d
 
     def shower_matches_prefs(sh, thresholds):
