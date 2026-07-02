@@ -280,7 +280,6 @@ def main():
         print('Nothing to alert on — exiting.')
         return
 
-    # 3. Load verified active subscribers
     subscribers = supa_get('subscribers', {
         'select':       'id,email,token,thresholds',
         'verified':     'eq.true',

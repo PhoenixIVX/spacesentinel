@@ -4,3 +4,4 @@ CLAUDE.md
 kb/
 CLAUDE.md
 .claude/
+__pycache__/
