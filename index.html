@@ -909,7 +909,9 @@ async function searchLocationAndView(pid, elEncoded, approachDate) {
   doViewFromHere(pid, elEncoded, approachDate);
 }
 
+let detailOpenedAt = 0;
 function openDetailPanel(html) {
+  detailOpenedAt = performance.now();
   const overlay = document.getElementById('detailOverlay');
   const panel = document.getElementById('detailPanel');
   panel.innerHTML = `<button class="detail-close" id="detailCloseBtn">[ CLOSE ]</button>` + html;
@@ -917,7 +919,7 @@ function openDetailPanel(html) {
   document.getElementById('detailCloseBtn').addEventListener('click', closeDetailPanel);
 }
 function closeDetailPanel() { document.getElementById('detailOverlay')?.classList.remove('open'); }
-document.getElementById('detailOverlay').addEventListener('click', e => { if (e.target.id === 'detailOverlay') closeDetailPanel(); });
+document.getElementById('detailOverlay').addEventListener('click', e => { if (e.target.id === 'detailOverlay' && performance.now() - detailOpenedAt > 350) closeDetailPanel(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetailPanel(); });
 
 
@@ -1516,7 +1518,8 @@ function initHomeInteractions() {
   canvas.addEventListener('pointermove', e => {
     if (e.buttons !== 1) return;
     const dx = e.clientX - dragStartX, dy = e.clientY - dragStartY;
-    if (Math.hypot(dx, dy) > 3) isDragging = true;
+    const slop = e.pointerType === 'touch' ? 12 : 3;
+    if (Math.hypot(dx, dy) > slop) isDragging = true;
     if (isDragging) { view.panX = dragStartPan.x + dx; view.panY = dragStartPan.y + dy; }
   });
   canvas.addEventListener('pointerup', e => {
@@ -1527,6 +1530,7 @@ function initHomeInteractions() {
     }
     isDragging = false;
   });
+  canvas.addEventListener('pointercancel', () => { isDragging = false; });
 
   document.getElementById('btnPlayPause').addEventListener('click', function () {
     playing = !playing;
