@@ -745,7 +745,7 @@ function getUserLocation() {
     if (!navigator.geolocation) { resolve(null); return; }
     navigator.geolocation.getCurrentPosition(
       pos => { userLocationCache = { lat: pos.coords.latitude, lon: pos.coords.longitude }; userLocationManual = false; resolve(userLocationCache); },
-      () => resolve(null), { timeout: 10000 });
+      () => resolve(null), { timeout: 20000, maximumAge: 300000 });
   });
 }
 function eclipticToEquatorial(xe, ye, ze) {
@@ -829,7 +829,7 @@ async function doViewFromHere(pid, elEncoded, approachDate) {
   }
   if (!elEncoded) {
     const place = await reverseGeocode(loc.lat, loc.lon);
-    el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px;line-height:1.9">📍 Near <strong style="color:var(--t1)">${place}</strong>${userLocationManual ? '' : '<br><span style="font-size:8.5px;color:var(--t3)">Location from your browser — using a VPN may show the city of your VPN server instead.</span>'}<br>We don\u2019t have enough data yet to calculate where to look for this object — check back soon. For exact pointing, use <strong style="color:var(--t1)">Stellarium</strong> or <strong style="color:var(--t1)">SkySafari</strong>.</div>`;
+    el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px;line-height:1.9">📍 Near <strong style="color:var(--t1)">${place}</strong>${userLocationManual ? '' : '<br><span style="font-size:8.5px;color:var(--t3)">Location from your browser — using a VPN may show the city of your VPN server instead.</span>'}<br>We don\u2019t have enough data yet to calculate where to look for this object — check back soon. For exact pointing, use <strong style="color:var(--t1)">Stellarium</strong> or <strong style="color:var(--t1)">SkySafari</strong>.<br><span style="cursor:pointer;text-decoration:underline;color:var(--t2);font-size:9px" onclick="showLocationPicker('${pid}','${elEncoded}','${approachDate}')">Use a different location</span></div>`;
     return;
   }
   try {
