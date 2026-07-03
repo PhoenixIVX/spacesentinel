@@ -87,7 +87,7 @@ def fetch_cad(kind):
 
 def fetch_elements(des):
     try:
-        data = fetch_json(SBDB_URL, {"des": des})
+        data = fetch_json(SBDB_URL, {"des": des, "full-prec": "1"})
         orbit = data.get("orbit")
         if not orbit:
             return None
