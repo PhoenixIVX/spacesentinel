@@ -99,6 +99,7 @@ header {
 }
 .nav-tab:hover { color: var(--t1); }
 .nav-tab.active { color: var(--void); background: var(--c); box-shadow: 0 0 16px var(--cg); }
+.tab-label-short { display: none; }
 
 .header-date { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--t3); letter-spacing: 1.5px; white-space: nowrap; }
 
@@ -288,7 +289,11 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   header { padding: 12px 16px; }
   .brand-name { font-size: 13px; letter-spacing: 2px; }
   .brand-sub { display: none; }
-  .nav-tab { padding: 8px 11px; font-size: 9px; }
+  .nav-tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .nav-tab { padding: 8px 9px; font-size: 9px; letter-spacing: 1px; flex: 0 0 auto; }
+  .tab-label-full { display: none; }
+  .tab-label-short { display: inline; }
   .radar-side, .stats-side, .list-section, .home-side { padding: 16px; }
 }
 
@@ -318,7 +323,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
     </div>
     <div class="nav-tabs">
       <button class="nav-tab active" data-tab="home">SOLAR SYSTEM</button>
-      <button class="nav-tab" data-tab="meteors">METEOR SHOWERS</button>
+      <button class="nav-tab" data-tab="meteors"><span class="tab-label-full">METEOR SHOWERS</span><span class="tab-label-short">METEORS</span></button>
       <button class="nav-tab" data-tab="asteroids">ASTEROIDS</button>
       <button class="nav-tab" data-tab="comets">COMETS</button>
       <button class="nav-tab" data-tab="closecalls">CLOSE CALLS</button>
