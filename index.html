@@ -291,10 +291,18 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   .brand-sub { display: none; }
   .nav-tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .nav-tabs::-webkit-scrollbar { display: none; }
-  .nav-tab { padding: 8px 9px; font-size: 9px; letter-spacing: 1px; flex: 0 0 auto; }
+  .nav-tab { padding: 8px 9px; font-size: 9px; letter-spacing: 1px; flex: 0 0 auto; min-height: 44px; }
   .tab-label-full { display: none; }
   .tab-label-short { display: inline; }
   .radar-side, .stats-side, .list-section, .home-side { padding: 16px; }
+  .header-date-utc { display: none; }
+  .header-actions { flex-wrap: wrap; gap: 10px; }
+  .solar-hint { display: none; }
+  .filter-btn { min-height: 44px; }
+  .zoom-btn { width: 40px; height: 40px; }
+  select { min-height: 44px; }
+  #historicalStrip { display: grid !important; grid-template-columns: 1fr 1fr; }
+  #historicalStrip > div { min-width: 0 !important; max-width: none !important; }
 }
 
 footer { border-top: 1px solid var(--b1); padding: 10px 28px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; background: rgba(5,10,18,.6); }
@@ -328,7 +336,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
       <button class="nav-tab" data-tab="comets">COMETS</button>
       <button class="nav-tab" data-tab="closecalls">CLOSE CALLS</button>
     </div>
-    <div style="display:flex;align-items:center;gap:14px">
+    <div class="header-actions" style="display:flex;align-items:center;gap:14px">
       <button class="filter-btn" onclick="showGlossaryAll()">? GLOSSARY</button>
       <button class="filter-btn" onclick="showAlertSignup()" style="color:var(--g);border-color:var(--g)">🔔 ALERTS</button>
       <div class="header-date" id="headerDate"></div>
@@ -1353,7 +1361,8 @@ function drawSolarSystem(ts) {
   if (layerState.live && earthSP && (liveCounts.ast !== null || liveCounts.com !== null)) {
     const total = (liveCounts.ast || 0) + (liveCounts.com || 0);
     const pulse = 0.5 + 0.5 * Math.sin(ts * 0.003);
-    const bx = earthSP.x + 16, by = earthSP.y - 16;
+    const smallCanvas = W < 520;
+    const bx = smallCanvas ? 14 : earthSP.x + 16, by = smallCanvas ? H - 120 : earthSP.y - 16;
     ctx.beginPath(); ctx.arc(bx, by, 9 + pulse * 4, 0, Math.PI * 2);
     ctx.strokeStyle = `rgba(0,232,144,${0.5 - pulse * 0.3})`; ctx.lineWidth = 1.2; ctx.stroke();
     ctx.shadowColor = '#00E890'; ctx.shadowBlur = 8;
@@ -1774,7 +1783,8 @@ function initRadarAst() {
     const bg = ctx.createRadialGradient(cx,cy,0,cx,cy,maxR); bg.addColorStop(0,'#0A1828'); bg.addColorStop(1,'#020810');
     ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
     const fsz = Math.max(7, W*0.016); ctx.font = `${fsz}px 'Space Mono', monospace`; ctx.textAlign='left';
-    const labelStep = pickLabelStep(astZoomLD, [{upTo:40,step:10},{upTo:100,step:20},{upTo:200,step:50}]);
+    let labelStep = pickLabelStep(astZoomLD, [{upTo:40,step:10},{upTo:100,step:20},{upTo:200,step:50}]);
+    if (W < 520) while (labelStep < astZoomLD && linToR(labelStep, maxR, astZoomLD) < 44) labelStep *= 2;
     const numRings = Math.floor(astZoomLD / 10);
     for (let i=1;i<=numRings;i++){ const ld=i*10, r=linToR(ld,maxR,astZoomLD);
       ctx.strokeStyle='rgba(0,192,255,.09)'; ctx.lineWidth=0.5; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
@@ -2035,7 +2045,8 @@ function initRadarCom() {
     const bg = ctx.createRadialGradient(cx,cy,0,cx,cy,maxR); bg.addColorStop(0,'#0A1828'); bg.addColorStop(1,'#020810');
     ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
     const fsz=Math.max(7,W*0.015); ctx.font=`${fsz}px 'Space Mono', monospace`; ctx.textAlign='left';
-    const labelStepQ = pickLabelStep(comZoomAU, [{upTo:1,step:1},{upTo:2,step:2},{upTo:3,step:4}]);
+    let labelStepQ = pickLabelStep(comZoomAU, [{upTo:1,step:1},{upTo:2,step:2},{upTo:3,step:4}]);
+    if (W < 520) while (labelStepQ * 0.25 < comZoomAU && linToR(labelStepQ * 0.25, maxR, comZoomAU) < 44) labelStepQ *= 2;
     const numRings = Math.floor(comZoomAU / 0.25);
     for (let i=1;i<=numRings;i++){ const au=i*0.25, r=linToR(au,maxR,comZoomAU);
       ctx.strokeStyle='rgba(0,192,255,.09)'; ctx.lineWidth=0.5; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
@@ -2763,7 +2774,7 @@ function initHeaderDate() {
   const d = new Date();
   const pad = n => String(n).padStart(2, '0');
   const local = `${pad(d.getDate())} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  document.getElementById('headerDate').textContent = `${local} · ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
+  document.getElementById('headerDate').innerHTML = `${local}<span class="header-date-utc"> · ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC</span>`;
 }
 function setHeaderHeightVar() {
   const h = document.querySelector('header').offsetHeight;
