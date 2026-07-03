@@ -26,7 +26,6 @@ def fetch_json(url, params):
 
 
 def process_neo(data):
-    """Flatten NeoWs response to a list of close-approach records."""
     out = []
     for date_str, neos in data.get('near_earth_objects', {}).items():
         for neo in neos:

@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-Space Sentinel — close-call alert sender.
-
-"""
 import json
 import math
 import os
@@ -17,7 +13,7 @@ import httpx
 
 
 SUPABASE_URL        = os.environ['SUPABASE_URL'].rstrip('/')
-SUPABASE_SERVICE_KEY = os.environ['SUPABASE_SERVICE_KEY']   # bypasses RLS
+SUPABASE_SERVICE_KEY = os.environ['SUPABASE_SERVICE_KEY']
 RESEND_API_KEY      = os.environ['RESEND_API_KEY']
 FROM_EMAIL          = os.environ.get('FROM_EMAIL', 'Space Sentinel <alerts@spacesentinel.xyz>')
 SITE_URL            = os.environ.get('SITE_URL', 'https://spacesentinel.xyz')
@@ -55,10 +51,9 @@ def subscriber_tier_index(threshold_tier: str) -> int:
     try:
         return TIER_ORDER.index(threshold_tier)
     except ValueError:
-        return TIER_ORDER.index('telescope')   # sensible default
+        return TIER_ORDER.index('telescope')
 
 def object_meets_threshold(obj: dict, thresholds: dict) -> bool:
-    """True if this close-approach object meets the subscriber's thresholds."""
     obj_type  = obj.get('type', 'asteroid')
     is_comet  = obj_type == 'comet'
 
@@ -73,7 +68,7 @@ def object_meets_threshold(obj: dict, thresholds: dict) -> bool:
         miss_km = (obj.get('dist', 0) * AU_KM)
 
     if h is None:
-        return False   # can't classify without magnitude
+        return False
 
     try:
         miss_km_val = float(miss_km)
@@ -138,7 +133,6 @@ def send_email(to: str, subject: str, html: str) -> bool:
     return True
 
 def dist_plain_english(miss_ld) -> str:
-    """One-line plain-English context for a lunar-distance value."""
     try:
         ld = float(miss_ld)
     except (TypeError, ValueError):

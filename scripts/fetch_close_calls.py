@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-"""
-Space Sentinel — close-call data fetcher.
-
-"""
 import json
 import math
 import os
