@@ -50,6 +50,8 @@ def tier_for_mag(mag: float) -> dict:
     return VIS_TIERS[-1]
 
 def subscriber_tier_index(threshold_tier: str) -> int:
+    if threshold_tier == 'any':
+        return len(TIER_ORDER) - 1
     try:
         return TIER_ORDER.index(threshold_tier)
     except ValueError:
@@ -273,6 +275,20 @@ def main():
             continue
         if now <= obj_date <= cutoff:
             upcoming.append(obj)
+
+    def dedupe_key(obj):
+        name = str(obj.get('name') or obj.get('des') or obj.get('id') or '')
+        return (name.replace('(', '').replace(')', '').strip().lower(), obj.get('date'))
+
+    seen_keys = set()
+    deduped = []
+    for obj in upcoming:
+        k = dedupe_key(obj)
+        if k in seen_keys:
+            continue
+        seen_keys.add(k)
+        deduped.append(obj)
+    upcoming = deduped
 
     print(f'{len(upcoming)} objects in next {LOOK_AHEAD_DAYS} days.')
 

@@ -9,7 +9,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/astronomy-engine/2.1.19/astronomy.browser.min.js" crossorigin="anonymous"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
 
@@ -441,9 +440,9 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
           <div class="status-line"><div class="status-dot" id="statusDot-ast"></div><span id="status-ast">INITIALIZING...</span></div>
         </div>
         <div class="stats-side">
-          <div class="eyebrow">7-DAY WINDOW STATISTICS</div>
+          <div class="eyebrow">28-DAY WINDOW STATISTICS</div>
           <div class="stats-grid">
-            <div class="stat-card" id="stat-total-ast"><div class="stat-value">—</div><div class="stat-label">OBJECTS TRACKED</div><div class="stat-sub">7-day window</div></div>
+            <div class="stat-card" id="stat-total-ast"><div class="stat-value">—</div><div class="stat-label">OBJECTS TRACKED</div><div class="stat-sub">28-day window</div></div>
             <div class="stat-card h-card" id="stat-hazardous-ast"><div class="stat-value">—</div><div class="stat-label">POTENTIALLY HAZARDOUS</div><div class="stat-sub">active PHAs</div></div>
             <div class="stat-card" id="stat-closest-ast"><div class="stat-value">—</div><div class="stat-label">CLOSEST APPROACH</div><div class="stat-sub">lunar distances</div></div>
             <div class="stat-card" id="stat-fastest-ast"><div class="stat-value">—</div><div class="stat-label">FASTEST OBJECT</div><div class="stat-sub">km/s relative velocity</div></div>
@@ -595,8 +594,8 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
   </main>
 
   <footer>
-    <span id="footerLeft">DATA: NASA NEOWS API · JPL CLOSE-APPROACH DATA API · KEPLERIAN PROPAGATION</span>
-    <span id="footerRight">SPACE SENTINEL</span>
+    <span id="footerLeft">DATA: NASA NEOWS API · JPL CLOSE-APPROACH DATA API · KEPLERIAN PROPAGATION · PLACE NAMES © OPENSTREETMAP</span>
+    <span id="footerRight">SPACE SENTINEL — INDEPENDENT PROJECT, NOT AFFILIATED WITH NASA OR JPL</span>
   </footer>
 
 </div>
@@ -609,6 +608,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
 
 const fmt = (n, d = 1) => (n === null || n === undefined || isNaN(n)) ? '—' : (+n).toFixed(d);
 const dateStr = d => d.toISOString().split('T')[0];
+const escapeHTML = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 function idToAngle(id) {
   let h = 2166136261;
@@ -694,7 +694,7 @@ async function reverseGeocode(lat, lon) {
     const res = await fetch(url, { headers: { 'Accept-Language': 'en', 'User-Agent': 'SpaceSentinel/1.0' } });
     const data = await res.json();
     const a = data.address || {};
-    return a.city || a.town || a.village || a.county || a.state || 'your location';
+    return escapeHTML(a.city || a.town || a.village || a.county || a.state || 'your location');
   } catch { return 'your location'; }
 }
 function getUserLocation() {
@@ -760,8 +760,8 @@ function viewFromHereSection(des, approachDate, orbEl) {
       <div class="detail-sep">WHERE TO LOOK</div>
       <div id="${pid}" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--read);line-height:2">
         <button class="filter-btn" onclick="doViewFromHere('${pid}','${elSafe}','${approachDate}')">📍 USE MY LOCATION</button>
-        <span style="color:var(--t2);margin-left:10px">Location is used in-memory only — nothing is stored.</span>
-        <div style="margin-top:6px;color:var(--t2);font-size:9px">${orbEl ? 'Precise direction for the night of closest approach.' : 'We\\u2019re still collecting precise data for this object. For exact pointing, use <strong style="color:var(--t1)">Stellarium</strong> or <strong style="color:var(--t1)">SkySafari</strong>.'}</div>
+        <span style="color:var(--t2);margin-left:10px">Your location is never stored — it’s only used to work out where to look, with the place name provided by OpenStreetMap.</span>
+        <div style="margin-top:6px;color:var(--t2);font-size:9px">${orbEl ? 'Precise direction for the night of closest approach.' : 'We’re still collecting precise data for this object. For exact pointing, use <strong style="color:var(--t1)">Stellarium</strong> or <strong style="color:var(--t1)">SkySafari</strong>.'}</div>
       </div>
     </div>`;
 }
@@ -818,7 +818,7 @@ async function doViewFromHere(pid, elEncoded, approachDate) {
       </div>` : `<div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--t2);margin-bottom:10px">Not visible from ${place} on this date.<br><span style="font-size:10px">${windowStr}</span></div>`}
       <div style="margin-top:10px;font-size:9px;color:var(--t3)"><span style="cursor:pointer;text-decoration:underline;color:var(--t2)" onclick="userLocationCache=null;doViewFromHere('${pid}','${elEncoded}','${approachDate}')">Use a different location</span></div>`;
   } catch(e) {
-    el.innerHTML = `<div style="color:var(--h);font-family:'Space Mono',monospace;font-size:10px">Sky position calculation failed: ${e.message}</div>`;
+    el.innerHTML = `<div style="color:var(--h);font-family:'Space Mono',monospace;font-size:10px">Sky position calculation failed: ${escapeHTML(e.message)}</div>`;
   }
 }
 
@@ -1038,7 +1038,12 @@ function showAlertSignup() {
     <div id="alertSignupMsg" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--t2);display:none"></div>
     <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">You'll receive a verification email. It includes a link to manage your preferences straight away.</div></div>`);
 
-  if (window.turnstile) turnstile.render('#turnstile-widget', { sitekey: CONFIG.TURNSTILE_SITE_KEY });
+  (function renderTurnstile() {
+    const widget = document.getElementById('turnstile-widget');
+    if (!widget) return;
+    if (window.turnstile) turnstile.render(widget, { sitekey: CONFIG.TURNSTILE_SITE_KEY });
+    else setTimeout(renderTurnstile, 300);
+  })();
   const metBox = document.getElementById('alertMet');
   const hemiField = document.getElementById('hemiField');
   if (metBox && hemiField) {
@@ -1316,7 +1321,7 @@ function updateRightNowPanel() {
   if (liveCounts.ast === null && liveCounts.com === null) { el.textContent = 'Loading live counts…'; return; }
   const astN = liveCounts.ast || 0, comN = liveCounts.com || 0;
   const total = astN + comN;
-  el.innerHTML = `<strong style="color:var(--c)">${total}</strong> near-Earth objects tracked right now — ${astN} asteroids (next 7 days), ${comN} comets (next 2 years).<br><br>Most pose no risk. Hazard-flagged ones get a clear badge wherever they show up. See what's coming up in <span class="gloss" onclick="switchTab('closecalls')">Close Calls →</span>`;
+  el.innerHTML = `<strong style="color:var(--c)">${total}</strong> near-Earth objects tracked right now — ${astN} asteroids (next ${astWindowDays} days), ${comN} comets (next 2 years).<br><br>Most pose no risk. Hazard-flagged ones get a clear badge wherever they show up. See what's coming up in <span class="gloss" onclick="switchTab('closecalls')">Close Calls →</span>`;
 }
 function showHomeDetail(hit) {
   if (hit.kind === 'live-badge') {
@@ -1325,7 +1330,7 @@ function showHomeDetail(hit) {
       <div><div class="detail-name">Live Near-Earth Activity</div><div style="margin-top:8px"><span class="obj-badge active-c" style="font-size:8.5px">☄ LIVE FEEDS</span></div></div>
       <div class="detail-prose">Real-time counts pulled from NASA and JPL just now. These aren\u2019t plotted at their true orbital position here — that needs a full orbit lookup we don\u2019t fetch for every live object — but they\u2019re genuinely tracked in the Asteroids and Comets tabs.</div>
       <div class="detail-grid">
-        <div class="detail-field"><div class="df-label">ASTEROIDS (7-DAY WINDOW)</div><div class="df-value c">${astN}</div></div>
+        <div class="detail-field"><div class="df-label">ASTEROIDS (${astWindowDays}-DAY WINDOW)</div><div class="df-value c">${astN}</div></div>
         <div class="detail-field"><div class="df-label">COMETS (≤2 AU, 2-YR WINDOW)</div><div class="df-value c">${comN}</div></div>
       </div>
       <button class="detail-link" style="cursor:pointer" onclick="closeDetailPanel();switchTab('asteroids')">VIEW ASTEROIDS →</button>
@@ -1483,6 +1488,7 @@ const CONFIG = {
 };
 let allAsteroids = [];
 let asteroidsLoaded = false;
+let astWindowDays = 28;
 let hoveredAstId = null;
 let lastAstRadarPositions = [];
 let astZoomLD = 100;
@@ -1491,6 +1497,14 @@ let astFilter = 'all', astSort = 'date';
 function setAstStatus(text, hazard) {
   document.getElementById('status-ast').textContent = text;
   document.getElementById('statusDot-ast').className = 'status-dot' + (hazard ? ' hazard' : '');
+}
+function applyAstWindowLabels() {
+  const radarEyebrow = document.querySelector('#panel-asteroids .radar-side .eyebrow');
+  if (radarEyebrow) radarEyebrow.textContent = `PROXIMITY RADAR — ${astWindowDays}-DAY SCAN WINDOW`;
+  const statsEyebrow = document.querySelector('#panel-asteroids .stats-side .eyebrow');
+  if (statsEyebrow) statsEyebrow.textContent = `${astWindowDays}-DAY WINDOW STATISTICS`;
+  const totalSub = document.querySelector('#stat-total-ast .stat-sub');
+  if (totalSub) totalSub.textContent = `${astWindowDays}-day window`;
 }
 
 async function loadAsteroids() {
@@ -1509,7 +1523,7 @@ async function loadAsteroids() {
         hazardous: r.hazardous, magnitude: r.magnitude, url: r.url,
         _angle: idToAngle(r.id), _lastPing: 0,
       }));
-      source = `cached · ${(cached.generated || '').slice(0, 10)}`;
+      source = `updated ${(cached.generated || '').slice(0, 10)}`;
     } else {
       const start = dateStr(new Date());
       const end   = dateStr(new Date(Date.now() + 7 * 86400000));
@@ -1520,7 +1534,9 @@ async function loadAsteroids() {
       if (data.error) throw new Error(data.error.message || 'API error');
       records = processNEOs(data);
       records.forEach(o => { o._angle = idToAngle(o.id); o._lastPing = 0; });
-      source = 'live (cache not ready)';
+      source = 'live';
+      astWindowDays = 7;
+      applyAstWindowLabels();
     }
     allAsteroids = records;
     liveCounts.ast = allAsteroids.length;
@@ -1566,7 +1582,7 @@ function renderAstStats(objs) {
   const nCard = document.getElementById('stat-next-ast');
   if (nCard && next) {
     nCard.querySelector('.next-name').textContent = next.name;
-    nCard.querySelector('.next-meta').innerHTML = `${next.date} UTC<br>${fmt(next.miss_ld,2)} LD &nbsp;·&nbsp; ${fmt(next.vel_kms,1)} km/s` + (next.hazardous ? ' &nbsp;·&nbsp; <span style="color:var(--h)">⚠ PHA</span>' : '');
+    nCard.querySelector('.next-meta').innerHTML = `${next.date}<br>${fmt(next.miss_ld,2)} LD &nbsp;·&nbsp; ${fmt(next.vel_kms,1)} km/s` + (next.hazardous ? ' &nbsp;·&nbsp; <span style="color:var(--h)">⚠ PHA</span>' : '');
   }
 }
 function applyAstFilterSort() {
@@ -1612,7 +1628,7 @@ function renderAstSkeletons() {
 function renderAstError(msg) {
   document.getElementById('objectsGrid-ast').innerHTML = `
     <div class="empty-state"><div class="empty-icon">⚠</div><div class="empty-err">SIGNAL LOST</div>
-      <div class="empty-hint">${msg || 'NASA NeoWs API unavailable'}<br>DEMO_KEY allows 30 req/hr · 50 req/day<br>Get a free key at <span style="color:var(--c)">api.nasa.gov</span> · Refresh to retry</div></div>`;
+      <div class="empty-hint">${escapeHTML(msg || 'NASA NeoWs API unavailable')}<br>DEMO_KEY allows 30 req/hr · 50 req/day<br>Get a free key at <span style="color:var(--c)">api.nasa.gov</span> · Refresh to retry</div></div>`;
 }
 function showAstDetail(obj) {
   const missKm = Math.round(obj.miss_km).toLocaleString();
@@ -1620,7 +1636,7 @@ function showAstDetail(obj) {
   const diamFmt = `${Math.round(obj.diam_min)}–${Math.round(obj.diam_max)} m`;
   openDetailPanel(`
     <div><div class="detail-name">${obj.name}</div><div style="margin-top:8px"><span class="obj-badge ${obj.hazardous?'pha':'safe'}" style="font-size:8.5px">${obj.hazardous?'⚠ POTENTIALLY HAZARDOUS ASTEROID':'✓ NON-HAZARDOUS OBJECT'}</span></div></div>
-    ${obj.hazardous ? `<div class="pha-banner"><div class="pha-icon">⚠</div><div class="pha-text">Classified as a Potentially Hazardous Asteroid by NASA/JPL. PHAs have orbits that pass within 0.05 AU of Earth and absolute magnitude H ≤ 22.</div></div>` : ''}
+    ${obj.hazardous ? `<div class="pha-banner"><div class="pha-icon">⚠</div><div class="pha-text">Classified as a Potentially Hazardous Asteroid by NASA/JPL. PHAs have orbits that pass within 0.05 AU of Earth’s orbit and absolute magnitude H ≤ 22.</div></div>` : ''}
     <div><div class="detail-sep">CLOSE APPROACH DATA</div><div class="detail-grid">
       <div class="detail-field"><div class="df-label">DATE</div><div class="df-value" style="font-size:13px">${obj.date}</div></div>
       <div class="detail-field"><div class="df-label">MISS DISTANCE</div><div class="df-value ${obj.hazardous?'h':'c'}">${fmt(obj.miss_ld,4)}<span class="u"> LD</span></div></div>
@@ -1645,7 +1661,7 @@ function initRadarAst() {
   resize();
   new ResizeObserver(resize).observe(container);
 
-  function setAstZoom(v) { astZoomLD = Math.min(200, Math.max(20, v)); if (zoomLabel) zoomLabel.textContent = `${astZoomLD} LD`; }
+  function setAstZoom(v) { astZoomLD = Math.min(200, Math.max(20, v)); if (zoomLabel) zoomLabel.textContent = `${Math.round(astZoomLD)} LD`; }
   setAstZoom(astZoomLD);
   document.getElementById('btnZoomIn-ast').addEventListener('click', () => setAstZoom(astZoomLD - 20));
   document.getElementById('btnZoomOut-ast').addEventListener('click', () => setAstZoom(astZoomLD + 20));
@@ -1816,7 +1832,7 @@ function renderComStats() {
   const nCard = document.getElementById('stat-next-com');
   if (nCard && next) {
     nCard.querySelector('.next-name').textContent = next.fullname;
-    nCard.querySelector('.next-meta').innerHTML = `${next.dateOnly} UTC<br>${fmt(next.dist,3)} AU &nbsp;·&nbsp; ${fmt(next.v_rel,1)} km/s` + (next.notable ? ' &nbsp;·&nbsp; <span style="color:var(--g)">☄ NOTABLE</span>' : '');
+    nCard.querySelector('.next-meta').innerHTML = `${next.dateOnly}<br>${fmt(next.dist,3)} AU &nbsp;·&nbsp; ${fmt(next.v_rel,1)} km/s` + (next.notable ? ' &nbsp;·&nbsp; <span style="color:var(--g)">☄ NOTABLE</span>' : '');
   } else if (nCard) {
     nCard.querySelector('.next-name').textContent = 'No comets in window';
     nCard.querySelector('.next-meta').textContent = 'JPL updates this feed as new comets are confirmed — check back later.';
@@ -1862,7 +1878,7 @@ function renderComSkeletons() {
 function renderComError(msg) {
   document.getElementById('objectsGrid-com').innerHTML = `
     <div class="empty-state"><div class="empty-icon">⚠</div><div class="empty-err">DATA UNAVAILABLE</div>
-      <div class="empty-hint">${msg || 'Could not load the cached close-call data.'}<br>Refresh to retry, or check back a little later.</div></div>`;
+      <div class="empty-hint">${escapeHTML(msg || 'Could not load the cached close-call data.')}<br>Refresh to retry, or check back a little later.</div></div>`;
   const nCard = document.getElementById('stat-next-com');
   if (nCard) { nCard.querySelector('.next-name').textContent = 'Feed unavailable'; nCard.querySelector('.next-meta').textContent = '—'; }
 }
@@ -1997,7 +2013,7 @@ function showerIsActive(sh) {
 function hemiQuality(sh, lat) {
   if (sh.hemi === 'B') return { score: 3, text: 'Good viewing from your hemisphere' };
   const north = lat >= 0;
-  if ((sh.hemi === 'N') === north) return { score: 3, text: 'Excellent — this shower favours your hemisphere' };
+  if ((sh.hemi === 'N') === north) return { score: 3, text: 'Excellent — this shower favors your hemisphere' };
   if (Math.abs(lat) < 25) return { score: 2, text: 'Decent — you\u2019re close enough to the equator to catch a reduced show' };
   return { score: 1, text: 'Visible but weaker from your hemisphere — expect noticeably fewer meteors than the headline rate' };
 }
@@ -2032,7 +2048,7 @@ function meteorCardHTML(sh) {
   const days = Math.ceil((peak - new Date()) / 86400000);
   const active = showerIsActive(sh);
   const countdown = active ? '☄ ACTIVE NOW' : days === 0 ? 'PEAKS TONIGHT' : `PEAKS IN ${days} DAY${days !== 1 ? 'S' : ''}`;
-  const hemiLabel = sh.hemi === 'B' ? 'BOTH HEMISPHERES' : sh.hemi === 'N' ? 'FAVOURS NORTH' : 'FAVOURS SOUTH';
+  const hemiLabel = sh.hemi === 'B' ? 'BOTH HEMISPHERES' : sh.hemi === 'N' ? 'FAVORS NORTH' : 'FAVORS SOUTH';
   return `
     <div class="obj-card ${active ? 'active-comet' : ''}" onclick="showMeteorDetail('${sh.id}')">
       <div class="obj-top"><div class="obj-name">${sh.name}</div><div class="obj-badge ${active ? 'active-c' : 'comet'}">${active ? '☄ ACTIVE' : 'SHOWER'}</div></div>
@@ -2107,7 +2123,16 @@ function showMeteorDetail(id) {
 }
 async function renderMeteors() {
   meteorsRendered = true;
-  await loadMeteorShowers();
+  try {
+    await loadMeteorShowers();
+  } catch (err) {
+    console.error('Meteor data:', err);
+    meteorsRendered = false;
+    meteorShowersPromise = null;
+    const gridEl = document.getElementById('meteorGrid');
+    if (gridEl) gridEl.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠</div><div class="empty-err">DATA UNAVAILABLE</div><div class="empty-hint">Could not load the meteor shower calendar.<br>Refresh to retry, or check back a little later.</div></div>`;
+    return;
+  }
   renderMeteorCalendar();
   const upcoming = meteorShowers.slice().sort((a,b) => nextPeakDate(a) - nextPeakDate(b)).slice(0,3);
   const upEl = document.getElementById('meteorUpcoming');
@@ -2511,7 +2536,7 @@ function ccCardHTML(rec) {
 function renderCCError(msg) {
   document.getElementById('objectsGrid-cc').innerHTML = `
     <div class="empty-state"><div class="empty-icon">⚠</div><div class="empty-err">DATA UNAVAILABLE</div>
-      <div class="empty-hint">${msg || 'Could not load the cached close-call data.'}<br>Refresh to retry, or check back a little later.</div></div>`;
+      <div class="empty-hint">${escapeHTML(msg || 'Could not load the cached close-call data.')}<br>Refresh to retry, or check back a little later.</div></div>`;
 }
 function renderCCPipelineNotice() {
   document.getElementById('objectsGrid-cc').innerHTML = `
@@ -2545,7 +2570,7 @@ function showCCDetail(rec) {
   if (rec.impact) { badgeText = '💥 IMPACT EVENT'; badgeClass = 'pha'; }
   else if (rec.preHistory) { badgeText = '📜 HISTORICAL RECORD'; badgeClass = 'active-c'; }
   else if (rec.curated) { badgeText = '★ FEATURED EVENT'; badgeClass = 'active-c'; }
-  else if (rec.highlighted) { badgeText = rec.type === 'comet' ? '☄ NOTABLE PASS' : '⚠ POTENTIALLY HAZARDOUS ASTEROID'; badgeClass = 'active-c'; }
+  else if (rec.highlighted) { badgeText = rec.type === 'comet' ? '☄ NOTABLE PASS' : '⚠ POTENTIALLY HAZARDOUS ASTEROID'; badgeClass = rec.type === 'comet' ? 'active-c' : 'pha'; }
   let distRow = '';
   if (!rec.preHistory) {
     distRow = rec.type === 'asteroid'
@@ -2557,7 +2582,7 @@ function showCCDetail(rec) {
   else if (rec.impact) banner = 'Hand-added: confirmed impacts are excluded from JPL\u2019s close-approach catalog by design.';
   else if (rec.curated) banner = 'Hand-picked for historical or scientific significance. Data from NASA/JPL \u00b7 Updated weekly.';
   else if (rec.highlighted) banner = `Automatically flagged using NASA/JPL\u2019s ${gloss('PHA', 'PHA')}-style criteria (size and proximity)${rec.type === 'comet' ? ' \u2014 here, the comet notable-pass threshold' : ''}. Data from NASA/JPL \u00b7 Updated weekly.`;
-  else banner = 'A routine catalogued close approach \u2014 most tracked objects pose no concern. Data from NASA/JPL \u00b7 Updated weekly.';
+  else banner = 'A routine cataloged close approach \u2014 most tracked objects pose no concern. Data from NASA/JPL \u00b7 Updated weekly.';
   openDetailPanel(`
     <div><div class="detail-name">${rec.name}</div><div style="margin-top:8px"><span class="obj-badge ${badgeClass}" style="font-size:8.5px">${badgeText}</span></div></div>
     ${rec.note ? `<div class="detail-prose">${rec.note}</div>` : ''}
@@ -2648,7 +2673,7 @@ function initCCEvents() {
 
 function initHeaderDate() {
   const d = new Date();
-  document.getElementById('headerDate').textContent = d.toUTCString().replace(' GMT',' UTC').substring(5,25).toUpperCase();
+  document.getElementById('headerDate').textContent = d.toUTCString().replace(' GMT',' UTC').substring(5,29).toUpperCase();
 }
 function setHeaderHeightVar() {
   const h = document.querySelector('header').offsetHeight;
@@ -2668,7 +2693,7 @@ async function init() {
   initComEvents();
   initCCEvents();
   fetchCachedElements().then(els => { cachedOrbitalElements = els; });
-  loadMeteorShowers();
+  loadMeteorShowers().catch(() => {});
   await Promise.all([loadAsteroids(), loadComets()]);
 }
 document.addEventListener('DOMContentLoaded', init);

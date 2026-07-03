@@ -52,7 +52,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
       msg.innerHTML = '<span class="err">This confirmation link is invalid or was already used.</span><br><br><a href="/">← Back to Space Sentinel</a>';
     }
   } catch (e) {
-    msg.innerHTML = `<span class="err">Confirmation failed: ${e.message}</span><br><br>Try the link again in a moment, or re-subscribe on the site.`;
+    const safeMsg = String(e.message).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+    msg.innerHTML = `<span class="err">Confirmation failed: ${safeMsg}</span><br><br>Try the link again in a moment, or re-subscribe on the site.`;
   }
 })();
 </script>

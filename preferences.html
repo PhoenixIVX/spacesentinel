@@ -38,6 +38,7 @@
 </div>
 
 <script>
+const escapeHTML = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 const CONFIG = {
   SUPABASE_URL:      'https://wudepgxsdilwigdsraxg.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1ZGVwZ3hzZGlsd2lnZHNyYXhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NTgxMzIsImV4cCI6MjA5ODQzNDEzMn0._3t2BECeOC4o0Arc2IN6PPsbx72QHlUWbXkhnTSKlug',
@@ -67,7 +68,7 @@ const CONFIG = {
     const t = sub.thresholds || {};
     root.innerHTML = `
       <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--t2);margin-bottom:20px">
-        Managing preferences for <strong style="color:var(--t1)">${sub.email}</strong>
+        Managing preferences for <strong style="color:var(--t1)">${escapeHTML(sub.email)}</strong>
       </div>
       <div style="display:flex;flex-direction:column;gap:16px">
         <div class="detail-field"><div class="df-label">MINIMUM VISIBILITY (ASTEROIDS &amp; COMETS)</div>
@@ -114,7 +115,7 @@ const CONFIG = {
     metBox.addEventListener('change', sync); sync();
     window._token = token;
   } catch (err) {
-    root.innerHTML = `<div style="color:var(--h)">Could not load preferences: ${err.message}</div>`;
+    root.innerHTML = `<div style="color:var(--h)">Could not load preferences: ${escapeHTML(err.message)}</div>`;
   }
 })();
 
