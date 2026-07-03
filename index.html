@@ -307,7 +307,6 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   .header-date { min-width: 122px; }
   .solar-scrub-wrap { flex-wrap: wrap; }
   #solarDateInput { flex: 1 1 100%; }
-  .solar-tap-hint { bottom: 122px; }
   .header-actions { flex-wrap: wrap; gap: 10px; }
   .solar-hint { display: none; }
   .filter-btn { min-height: 44px; }
@@ -2879,12 +2878,18 @@ function setHeaderHeightVar() {
   const h = document.querySelector('header').offsetHeight;
   document.documentElement.style.setProperty('--header-h', h + 'px');
 }
+function positionTapHint() {
+  const hint = document.querySelector('.solar-tap-hint');
+  const wrap = document.querySelector('.solar-scrub-wrap');
+  if (hint && wrap) hint.style.bottom = (wrap.offsetHeight + 52) + 'px';
+}
 async function init() {
   initStarfield();
   initHeaderDate();
   setHeaderHeightVar();
-  window.addEventListener('resize', setHeaderHeightVar);
-  document.fonts.ready.then(setHeaderHeightVar);
+  window.addEventListener('resize', () => { setHeaderHeightVar(); positionTapHint(); });
+  document.fonts.ready.then(() => { setHeaderHeightVar(); positionTapHint(); });
+  positionTapHint();
   resizeSolarCanvas();
   initHomeInteractions();
   requestAnimationFrame(drawSolarSystem);
