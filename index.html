@@ -103,7 +103,7 @@ header {
 .nav-tab.active { color: var(--void); background: var(--c); box-shadow: 0 0 16px var(--cg); }
 .tab-label-short { display: none; }
 
-.header-date { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--t3); letter-spacing: 1.5px; white-space: nowrap; }
+.header-date { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--t3); letter-spacing: 1.5px; white-space: nowrap; min-width: 204px; text-align: right; }
 
 
 .tab-panel { display: none; opacity: 0; transition: opacity .22s ease; }
@@ -262,7 +262,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .solar-zoom-group { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 4px; z-index: 5; }
 .zoom-btn { width: 26px; height: 26px; background: rgba(7,13,26,.85); border: 1px solid var(--b2); color: var(--t2); font-family: 'Space Mono', monospace; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .14s; }
 .zoom-btn:hover { color: var(--c); border-color: var(--c); }
-.solar-date-readout { position: absolute; bottom: 12px; left: 12px; font-family: 'Space Mono', monospace; font-size: 9.5px; letter-spacing: 1.5px; color: var(--t1); background: rgba(7,13,26,.85); border: 1px solid var(--b2); padding: 6px 10px; z-index: 5; }
+.solar-date-readout { position: absolute; bottom: 12px; left: 12px; font-family: 'Space Mono', monospace; font-size: 9.5px; letter-spacing: 1.5px; color: var(--t1); background: rgba(7,13,26,.85); border: 1px solid var(--b2); padding: 6px 10px; z-index: 5; min-width: 139px; min-height: 29px; }
 .solar-hint { position: absolute; bottom: 12px; right: 12px; font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1px; color: var(--t3); background: rgba(7,13,26,.7); padding: 5px 9px; z-index: 5; }
 .solar-tap-hint { position: absolute; bottom: 76px; left: 50%; transform: translateX(-50%); z-index: 5; font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px; color: var(--read); background: rgba(7,13,26,.75); padding: 5px 10px; white-space: nowrap; }
 .solar-tap-hint.seen { display: none; }
@@ -303,6 +303,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   .header-date-utc { display: none; }
   .hint-mouse { display: none; }
   .hint-touch { display: inline; }
+  .header-date { min-width: 122px; }
   .header-actions { flex-wrap: wrap; gap: 10px; }
   .solar-hint { display: none; }
   .filter-btn { min-height: 44px; }
@@ -354,6 +355,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
       <div class="header-date" id="headerDate"></div>
     </div>
   </header>
+  <script>document.documentElement.style.setProperty('--header-h', document.querySelector('header').offsetHeight + 'px');</script>
 
   <main>
 
@@ -2857,6 +2859,7 @@ async function init() {
   initHeaderDate();
   setHeaderHeightVar();
   window.addEventListener('resize', setHeaderHeightVar);
+  document.fonts.ready.then(setHeaderHeightVar);
   resizeSolarCanvas();
   initHomeInteractions();
   requestAnimationFrame(drawSolarSystem);
