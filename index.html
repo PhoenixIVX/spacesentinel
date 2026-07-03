@@ -2229,6 +2229,7 @@ async function renderMeteors() {
 const DATA_DATE_MIN = new Date(Date.UTC(1900, 0, 1));
 const DATA_DATE_MAX = new Date(Date.UTC(2200, 0, 1));
 const PX_PER_YEAR = 40;
+const TL_EDGE_PAD = 24;
 const PRE1900_ITEM_WIDTH = 90;
 const PRE1900_ZONE_PAD = 50;
 let allCloseCalls = [];
@@ -2293,7 +2294,7 @@ const CURATED_PRE1900 = [
 ];
 
 function preZoneWidth() { return CURATED_PRE1900.length * PRE1900_ITEM_WIDTH + PRE1900_ZONE_PAD; }
-function dateToX(date) { return ((date - DATA_DATE_MIN) / (365.25 * 86400000)) * PX_PER_YEAR * ccZoom; }
+function dateToX(date) { return ((date - DATA_DATE_MIN) / (365.25 * 86400000)) * PX_PER_YEAR * ccZoom + TL_EDGE_PAD; }
 function pre1900X(index) { return PRE1900_ZONE_PAD / 2 + index * PRE1900_ITEM_WIDTH + PRE1900_ITEM_WIDTH / 2; }
 
 function isCometDesignation(s) {
@@ -2455,7 +2456,7 @@ function computeFitZoom() {
   const wrap = document.getElementById('timelineWrap');
   if (!wrap || !wrap.clientWidth) return 0.15;
   const naturalMainWidth = 300 * PX_PER_YEAR; 
-  const available = Math.max(200, wrap.clientWidth - 24);
+  const available = Math.max(200, wrap.clientWidth - TL_EDGE_PAD * 2);
   return Math.max(0.05, available / naturalMainWidth);
 }
 function setCCZoom(newZoom) {
@@ -2467,7 +2468,7 @@ function setCCZoom(newZoom) {
   renderTimelineStructure();
   if (wrap) {
     const ratio = ccZoom / oldZoom;
-    requestAnimationFrame(() => { wrap.scrollLeft = center * ratio - wrap.clientWidth / 2; renderTimelineMarkers(false); });
+    requestAnimationFrame(() => { wrap.scrollLeft = (center - TL_EDGE_PAD) * ratio + TL_EDGE_PAD - wrap.clientWidth / 2; renderTimelineMarkers(false); });
   }
 }
 function ccZoomToFit() {
@@ -2483,8 +2484,8 @@ function renderTimelineStructure() {
   const track = document.getElementById('timelineTrack');
   if (!structure || !track) return;
   const mainZoneWidth = ((DATA_DATE_MAX - DATA_DATE_MIN) / (365.25 * 86400000)) * PX_PER_YEAR * ccZoom;
-  track.style.width = mainZoneWidth + 'px';
-  let html = `<div class="tl-baseline" style="left:0;width:${mainZoneWidth}px"></div>`;
+  track.style.width = (mainZoneWidth + TL_EDGE_PAD * 2) + 'px';
+  let html = `<div class="tl-baseline" style="left:${TL_EDGE_PAD}px;width:${mainZoneWidth}px"></div>`;
   const labelStepYears = ccZoom < 0.15 ? 100 : ccZoom < 0.6 ? 50 : ccZoom < 1.5 ? 25 : ccZoom < 4 ? 10 : ccZoom < 7 ? 5 : 1;
   for (let y = 1900; y <= 2200; y++) {
     const x = dateToX(new Date(Date.UTC(y, 0, 1)));
@@ -2552,7 +2553,7 @@ function renderTimelineMarkers(recenter) {
       ccFilteredSorted.forEach(rec => { rec._x = rec.preHistory ? pre1900X(rec.preIndex) : dateToX(rec.dateObj); });
       ccFilteredSorted.sort((a, b) => a._x - b._x);
       renderTimelineStructure();
-      requestAnimationFrame(() => { wrap.scrollLeft = x * ratio - wrap.clientWidth / 2; renderTimelineMarkers(false); });
+      requestAnimationFrame(() => { wrap.scrollLeft = (x - TL_EDGE_PAD) * ratio + TL_EDGE_PAD - wrap.clientWidth / 2; renderTimelineMarkers(false); });
     }
   }));
 }
