@@ -821,15 +821,7 @@ async function doViewFromHere(pid, elEncoded, approachDate) {
   el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px">Locating you…</div>`;
   const loc = await getUserLocation();
   if (!loc) {
-    el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px;line-height:1.9">
-      Location access denied or unavailable.<br>
-      <details style="margin-top:6px"><summary style="cursor:pointer">Enter coordinates manually</summary>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <input id="${pid}_lat" placeholder="Latitude" type="number" step="0.01" style="flex:1;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px">
-          <input id="${pid}_lon" placeholder="Longitude" type="number" step="0.01" style="flex:1;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px">
-          <button class="zoom-btn" style="width:auto;padding:0 12px" onclick="const la=parseFloat(document.getElementById('${pid}_lat').value),lo=parseFloat(document.getElementById('${pid}_lon').value);if(!isNaN(la)&&!isNaN(lo)){userLocationCache={lat:la,lon:lo};userLocationManual=true;doViewFromHere('${pid}','${elEncoded}','${approachDate}');}">GO</button>
-        </div>
-      </details></div>`;
+    showLocationPicker(pid, elEncoded, approachDate, 'Location blocked — type a place instead.');
     return;
   }
   if (!elEncoded) {
@@ -878,11 +870,11 @@ async function doViewFromHere(pid, elEncoded, approachDate) {
     el.innerHTML = `<div style="color:var(--h);font-family:'Space Mono',monospace;font-size:10px">Sky position calculation failed: ${escapeHTML(e.message)}</div>`;
   }
 }
-function showLocationPicker(pid, elEncoded, approachDate) {
+function showLocationPicker(pid, elEncoded, approachDate, intro) {
   const el = document.getElementById(pid);
   if (!el) return;
   el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px;line-height:1.9">
-    Planning to be somewhere else? Type a place to see the view from there.
+    ${intro || 'Planning to be somewhere else? Type a place to see the view from there.'}
     <div style="display:flex;gap:8px;margin-top:8px">
       <input id="${pid}_place" placeholder="Type a city or town" style="flex:1;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px" onkeydown="if(event.key==='Enter')searchLocationAndView('${pid}','${elEncoded}','${approachDate}')">
       <button class="zoom-btn" style="width:auto;padding:0 12px" onclick="searchLocationAndView('${pid}','${elEncoded}','${approachDate}')">GO</button>
