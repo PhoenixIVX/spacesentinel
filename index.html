@@ -265,6 +265,7 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .solar-date-readout { position: absolute; bottom: 12px; left: 12px; font-family: 'Space Mono', monospace; font-size: 9.5px; letter-spacing: 1.5px; color: var(--t1); background: rgba(7,13,26,.85); border: 1px solid var(--b2); padding: 6px 10px; z-index: 5; min-width: 139px; min-height: 29px; }
 .solar-hint { position: absolute; bottom: 12px; right: 12px; font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1px; color: #557FA5; background: rgba(7,13,26,.7); padding: 5px 9px; z-index: 5; }
 .solar-tap-hint { position: absolute; bottom: 76px; left: 50%; transform: translateX(-50%); z-index: 5; font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px; color: var(--read); background: rgba(7,13,26,.75); padding: 5px 10px; white-space: nowrap; }
+.date-inline { background: var(--card); border: 1px solid var(--b2); color: var(--t1); font-family: 'Space Mono', monospace; font-size: 10px; padding: 3px 6px; color-scheme: dark; }
 .solar-tap-hint.seen { display: none; }
 .hint-touch { display: none; }
 .solar-scrub-wrap { position: absolute; bottom: 40px; left: 12px; right: 12px; display: flex; align-items: center; gap: 8px; background: rgba(7,13,26,.85); border: 1px solid var(--b2); padding: 5px 10px; z-index: 5; }
@@ -304,6 +305,8 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   .hint-mouse { display: none; }
   .hint-touch { display: inline; }
   .header-date { min-width: 122px; }
+  .solar-scrub-wrap { flex-wrap: wrap; }
+  #solarDateInput { flex: 1 1 100%; }
   .header-actions { flex-wrap: wrap; gap: 10px; }
   .solar-hint { display: none; }
   .filter-btn { min-height: 44px; }
@@ -386,6 +389,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
             <span class="solar-scrub-label">SCRUB</span>
             <input type="range" id="solarScrub" min="-50" max="50" value="0" step="0.1" aria-label="Scrub the map through time">
             <span class="solar-scrub-label" id="solarScrubReadout">TODAY</span>
+            <input type="date" class="date-inline" id="solarDateInput" aria-label="Jump the map to a date">
           </div>
           <div class="solar-date-readout" id="solarDateReadout">— — —</div>
           <div class="solar-hint">SCROLL TO ZOOM · DRAG TO PAN · CLICK AN OBJECT</div>
@@ -831,7 +835,8 @@ function viewFromHereSection(des, approachDate, orbEl) {
     <div>
       <div class="detail-sep">WHERE TO LOOK</div>
       <div id="${pid}" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--read);line-height:2">
-        <button class="filter-btn" onclick="doViewFromHere('${pid}','${elSafe}','${approachDate}')">📍 USE MY LOCATION</button>
+        <div style="margin-bottom:8px;color:var(--t2)">Night to check: <input type="date" class="date-inline" id="${pid}_night" value="${approachDate}" aria-label="Night to check"></div>
+        <button class="filter-btn" onclick="doViewFromHere('${pid}','${elSafe}',document.getElementById('${pid}_night')?.value||'${approachDate}')">📍 USE MY LOCATION</button>
         <span style="color:var(--t2);margin-left:10px">Your location is never stored — it’s only used to work out where to look, with the place name provided by OpenStreetMap.</span>
         <div style="margin-top:6px;color:var(--t2);font-size:9px">${orbEl ? 'Precise direction for the night of closest approach.' : 'We’re still collecting precise data for this object. For exact pointing, use <strong style="color:var(--t1)">Stellarium</strong> or <strong style="color:var(--t1)">SkySafari</strong>.'}</div>
       </div>
@@ -873,7 +878,7 @@ async function doViewFromHere(pid, elEncoded, approachDate) {
     const fistStr = isVisible ? fistWidths(darkBest.alt) : '';
     const peakStr = isVisible ? hStr(darkBest.hour) : '';
     el.innerHTML = `
-      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--t2)">📍 Near <strong style="color:var(--read)">${place}</strong> · ${approachDate}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--t2)">📍 Near <strong style="color:var(--read)">${place}</strong> · Night to check: <input type="date" class="date-inline" id="${pid}_night" value="${approachDate}" aria-label="Night to check" onchange="if(this.value)doViewFromHere('${pid}','${elEncoded}',this.value)"></div>
       <div style="font-family:'Space Mono',monospace;font-size:8.5px;color:var(--t3);margin:2px 0 10px">${userLocationManual ? 'Times are shown in your time zone.' : 'Location from your browser — using a VPN may show the city of your VPN server instead.'}</div>
       ${isVisible ? `
       <div style="background:var(--card);border:1px solid var(--b2);padding:14px 16px;margin-bottom:10px">
@@ -1415,6 +1420,11 @@ function drawSolarSystem(ts) {
     const yo = (simTime - Date.now()) / (365.25 * 86400000);
     scrubReadout.textContent = Math.abs(yo) < 0.05 ? 'TODAY' : `${yo > 0 ? '+' : ''}${yo.toFixed(1)} YR`;
   }
+  const dateInputEl = document.getElementById('solarDateInput');
+  if (dateInputEl && document.activeElement !== dateInputEl) {
+    const v = localDateStr(new Date(simTime));
+    if (dateInputEl.value !== v) dateInputEl.value = v;
+  }
 
   if (playing) {
     const dt = (ts - (drawSolarSystem._last || ts)) / 1000;
@@ -1586,6 +1596,20 @@ function initHomeInteractions() {
       document.getElementById('btnPlayPause').textContent = '▶ PLAY';
       document.getElementById('btnPlayPause').classList.remove('active');
       simTime = Date.now() + parseFloat(this.value) * 365.25 * 86400000;
+    });
+  }
+  const dateEl = document.getElementById('solarDateInput');
+  if (dateEl) {
+    dateEl.value = localDateStr(new Date());
+    dateEl.addEventListener('change', function () {
+      if (!this.value) return;
+      const t = new Date(this.value + 'T12:00:00').getTime();
+      if (isNaN(t)) return;
+      const span = 50 * 365.25 * 86400000;
+      simTime = Math.max(Date.now() - span, Math.min(Date.now() + span, t));
+      playing = false;
+      document.getElementById('btnPlayPause').textContent = '▶ PLAY';
+      document.getElementById('btnPlayPause').classList.remove('active');
     });
   }
   document.getElementById('btnResetView').addEventListener('click', () => { view = { scale: 1, panX: 0, panY: 0 }; });
