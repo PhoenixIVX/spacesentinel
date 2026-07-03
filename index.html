@@ -759,22 +759,33 @@ function getObjRaDec(el, jd) {
   const dec  = Math.atan2(geo.z, Math.sqrt(geo.x**2 + geo.y**2)) * 180/Math.PI;
   return { ra, dec };
 }
+function getSunRaDec(jd) {
+  const earthEl = PLANETS.find(p => p.name === 'Earth').el;
+  const earth = bodyPosition(earthEl, jd);
+  const geo = eclipticToEquatorial(-earth.x, -earth.y, -earth.z);
+  const ra = ((Math.atan2(geo.y, geo.x) * 180/Math.PI) + 360) % 360;
+  const dec = Math.atan2(geo.z, Math.sqrt(geo.x**2 + geo.y**2)) * 180/Math.PI;
+  return { ra, dec };
+}
 async function computeSkyWindow(el, approachDate, lat, lon) {
   const base = new Date(approachDate + 'T12:00:00').getTime();
-  let best = { alt: -90, az: 0, hour: 12 }, riseH = null, setH = null;
+  let best = { alt: -90, az: 0, hour: 12 }, darkBest = null, riseH = null, setH = null;
   let prevAlt = null;
   for (let h = 0; h <= 24; h++) {
     const jd = jdFromDate(new Date(base + h*3600000));
     const { ra, dec } = getObjRaDec(el, jd);
     const { alt, az } = computeAltAz(ra, dec, lat, lon, jd);
+    const sun = getSunRaDec(jd);
+    const sunAlt = computeAltAz(sun.ra, sun.dec, lat, lon, jd).alt;
     if (alt > best.alt) { best = { alt, az, hour: h }; }
+    if (alt > 0 && sunAlt < -6 && (!darkBest || alt > darkBest.alt)) darkBest = { alt, az, hour: h };
     if (prevAlt !== null) {
       if (prevAlt < 0 && alt >= 0 && riseH === null) riseH = h;
       if (prevAlt >= 0 && alt < 0 && setH === null) setH = h;
     }
     prevAlt = alt;
   }
-  return { best, riseH, setH };
+  return { best, darkBest, riseH, setH };
 }
 function vfhPanelId(base) { return 'vfh_' + base.replace(/[^a-z0-9]/gi,'_'); }
 function viewFromHereSection(des, approachDate, orbEl) {
@@ -816,11 +827,12 @@ async function doViewFromHere(pid, elEncoded, approachDate) {
   try {
     const orbEl = JSON.parse(decodeURIComponent(elEncoded));
     el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px">Computing sky position…</div>`;
-    const [{ best, riseH, setH }, place] = await Promise.all([
+    const [{ best, darkBest, riseH, setH }, place] = await Promise.all([
       computeSkyWindow(orbEl, approachDate, loc.lat, loc.lon),
       reverseGeocode(loc.lat, loc.lon),
     ]);
-    const isVisible = best.alt > 0;
+    const everUp = best.alt > 0;
+    const isVisible = !!darkBest;
     const dayStartMs = new Date(approachDate + 'T12:00:00').getTime();
     const hStr = h => {
       const d = new Date(dayStartMs + h * 3600000);
@@ -828,11 +840,11 @@ async function doViewFromHere(pid, elEncoded, approachDate) {
     };
     const windowStr = riseH !== null && setH !== null
       ? `Rises around ${hStr(riseH)}, sets around ${hStr(setH)}`
-      : isVisible ? 'Visible throughout the night from your location'
+      : everUp ? 'Visible throughout the night from your location'
       : 'Not visible — below the horizon for your location on this date';
-    const dirStr  = isVisible ? compassDirection(best.az) : '—';
-    const fistStr = isVisible ? fistWidths(best.alt) : '';
-    const peakStr = isVisible ? hStr(best.hour) : '';
+    const dirStr  = isVisible ? compassDirection(darkBest.az) : '—';
+    const fistStr = isVisible ? fistWidths(darkBest.alt) : '';
+    const peakStr = isVisible ? hStr(darkBest.hour) : '';
     el.innerHTML = `
       <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--t2)">📍 Near <strong style="color:var(--read)">${place}</strong> · ${approachDate}</div>
       <div style="font-family:'Space Mono',monospace;font-size:8.5px;color:var(--t3);margin:2px 0 10px">${userLocationManual ? 'Times are shown in your time zone.' : 'Location from your browser — using a VPN may show the city of your VPN server instead.'}</div>
@@ -840,13 +852,14 @@ async function doViewFromHere(pid, elEncoded, approachDate) {
       <div style="background:var(--card);border:1px solid var(--b2);padding:14px 16px;margin-bottom:10px">
         <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--t2);letter-spacing:2px;margin-bottom:8px">HOW TO FIND IT</div>
         <div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--t1);line-height:2">
-          Face <strong style="color:var(--c);font-size:15px">${dirStr}</strong> <span style="color:var(--t2);font-size:10px">Az ${Math.round(best.az)}°</span><br>
-          At peak around <strong style="color:var(--c)">${peakStr}</strong> — ${fistStr} <span style="color:var(--t2);font-size:10px">Alt ${Math.round(best.alt)}°</span><br>
+          Face <strong style="color:var(--c);font-size:15px">${dirStr}</strong> <span style="color:var(--t2);font-size:10px">Az ${Math.round(darkBest.az)}°</span><br>
+          At peak around <strong style="color:var(--c)">${peakStr}</strong> — ${fistStr} <span style="color:var(--t2);font-size:10px">Alt ${Math.round(darkBest.alt)}°</span><br>
           <span style="color:var(--read)">${windowStr}</span><br>
-          <span style="color:var(--t2);font-size:10px">${altDesc(best.alt)}</span><br>
+          <span style="color:var(--t2);font-size:10px">${altDesc(darkBest.alt)}</span><br>
           <span style="color:var(--read);font-size:10px">Tip: a clenched fist held at arm's length covers roughly 10° of sky.</span>
         </div>
-      </div>` : `<div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--t2);margin-bottom:10px">Not visible from ${place} on this date.<br><span style="font-size:10px">${windowStr}</span></div>`}
+      </div>` : everUp ? `<div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--t2);margin-bottom:10px">Daytime-only on this date — not observable.${riseH !== null && setH !== null ? `<br><span style="font-size:10px">${windowStr}</span>` : ''}</div>`
+      : `<div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--t2);margin-bottom:10px">Not visible from ${place} on this date.<br><span style="font-size:10px">${windowStr}</span></div>`}
       <div style="margin-top:10px;font-size:9px;color:var(--t3)"><span style="cursor:pointer;text-decoration:underline;color:var(--t2)" onclick="showLocationPicker('${pid}','${elEncoded}','${approachDate}')">Use a different location</span></div>`;
   } catch(e) {
     el.innerHTML = `<div style="color:var(--h);font-family:'Space Mono',monospace;font-size:10px">Sky position calculation failed: ${escapeHTML(e.message)}</div>`;
