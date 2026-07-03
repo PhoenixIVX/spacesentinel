@@ -366,7 +366,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
           <canvas id="solarCanvas"></canvas>
           <div class="solar-toolbar">
             <button class="filter-btn active" id="btnPlayPause">⏸ PAUSE</button>
-            <select class="sw-select" id="speedSelect">
+            <select class="sw-select" id="speedSelect" aria-label="Simulation speed">
               <option value="0.0000116">REAL TIME</option>
               <option value="0.5">12 HOURS / SEC</option>
               <option value="1">1 DAY / SEC</option>
@@ -379,12 +379,12 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
             <button class="filter-btn" id="btnResetView">RESET VIEW</button>
           </div>
           <div class="solar-zoom-group">
-            <button class="zoom-btn" id="btnZoomIn">+</button>
-            <button class="zoom-btn" id="btnZoomOut">−</button>
+            <button class="zoom-btn" id="btnZoomIn" aria-label="Zoom in">+</button>
+            <button class="zoom-btn" id="btnZoomOut" aria-label="Zoom out">−</button>
           </div>
           <div class="solar-scrub-wrap">
             <span class="solar-scrub-label">SCRUB</span>
-            <input type="range" id="solarScrub" min="-50" max="50" value="0" step="0.1">
+            <input type="range" id="solarScrub" min="-50" max="50" value="0" step="0.1" aria-label="Scrub the map through time">
             <span class="solar-scrub-label" id="solarScrubReadout">TODAY</span>
           </div>
           <div class="solar-date-readout" id="solarDateReadout">— — —</div>
@@ -472,7 +472,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
           <div class="eyebrow">PROXIMITY RADAR — 28-DAY SCAN WINDOW</div>
           <div class="radar-canvas-container">
             <canvas id="radar-ast"></canvas>
-            <div class="radar-zoom-group"><button class="zoom-btn" id="btnZoomIn-ast">+</button><button class="zoom-btn" id="btnZoomOut-ast">−</button></div>
+            <div class="radar-zoom-group"><button class="zoom-btn" id="btnZoomIn-ast" aria-label="Zoom in">+</button><button class="zoom-btn" id="btnZoomOut-ast" aria-label="Zoom out">−</button></div>
             <div class="radar-zoom-label" id="radarZoomLabel-ast">100 LD</div>
           </div>
           <div class="radar-legend">
@@ -504,7 +504,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
             <button class="filter-btn h-filter" data-filter="hazardous">⚠ PHA ONLY</button>
             <button class="filter-btn" data-filter="today">TODAY</button>
             <div class="sort-wrap">SORT:
-              <select class="sw-select" id="sortSelect-ast">
+              <select class="sw-select" id="sortSelect-ast" aria-label="Sort asteroids">
                 <option value="date">DATE</option><option value="distance">DISTANCE</option>
                 <option value="velocity">VELOCITY</option><option value="size">SIZE</option>
                 <option value="magnitude">MAGNITUDE</option>
@@ -523,7 +523,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
           <div class="eyebrow">PROXIMITY RADAR — 2-YEAR SCAN WINDOW</div>
           <div class="radar-canvas-container">
             <canvas id="radar-com"></canvas>
-            <div class="radar-zoom-group"><button class="zoom-btn" id="btnZoomIn-com">+</button><button class="zoom-btn" id="btnZoomOut-com">−</button></div>
+            <div class="radar-zoom-group"><button class="zoom-btn" id="btnZoomIn-com" aria-label="Zoom in">+</button><button class="zoom-btn" id="btnZoomOut-com" aria-label="Zoom out">−</button></div>
             <div class="radar-zoom-label" id="radarZoomLabel-com">1.00 AU</div>
           </div>
           <div class="radar-legend">
@@ -553,7 +553,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
             <button class="filter-btn active" data-filter="all">ALL</button>
             <button class="filter-btn g-filter" data-filter="notable">☄ NOTABLE ONLY</button>
             <div class="sort-wrap">SORT:
-              <select class="sw-select" id="sortSelect-com">
+              <select class="sw-select" id="sortSelect-com" aria-label="Sort comets">
                 <option value="date">DATE</option><option value="distance">DISTANCE</option>
                 <option value="velocity">VELOCITY</option><option value="magnitude">MAGNITUDE</option>
               </select>
@@ -587,9 +587,9 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
           </div>
         </div>
         <div class="radar-zoom-group timeline-zoom-group">
-          <button class="zoom-btn" id="btnCCZoomIn">+</button>
-          <button class="zoom-btn" id="btnCCZoomOut">−</button>
-          <button class="zoom-btn" id="btnCCZoomFit" style="font-size:8px">FIT</button>
+          <button class="zoom-btn" id="btnCCZoomIn" aria-label="Zoom in">+</button>
+          <button class="zoom-btn" id="btnCCZoomOut" aria-label="Zoom out">−</button>
+          <button class="zoom-btn" id="btnCCZoomFit" style="font-size:8px" aria-label="Fit the whole timeline">FIT</button>
         </div>
       </div>
       
@@ -612,15 +612,15 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
           <div class="controls" style="flex-wrap:wrap;gap:7px">
             <button class="filter-btn" id="btnCCHighlightedOnly">★ HIGHLIGHTED ONLY</button>
             <div class="sort-wrap">YEAR:
-              <input id="ccYearFromInput" type="number" placeholder="FROM" min="1900" max="2200"
+              <input id="ccYearFromInput" type="number" placeholder="FROM" aria-label="Filter from year" min="1900" max="2200"
                 style="width:68px;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:9px;padding:4px 6px">
-              <input id="ccYearToInput" type="number" placeholder="TO" min="1900" max="2200"
+              <input id="ccYearToInput" type="number" placeholder="TO" aria-label="Filter to year" min="1900" max="2200"
                 style="width:68px;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:9px;padding:4px 6px">
-              <button class="zoom-btn" style="font-size:8px;width:auto;padding:0 8px" id="btnCCYearApply">GO</button>
-              <button class="zoom-btn" style="font-size:8px;width:auto;padding:0 8px" id="btnCCYearClear">✕</button>
+              <button class="zoom-btn" style="font-size:8px;width:auto;padding:0 8px" id="btnCCYearApply" aria-label="Apply year filter">GO</button>
+              <button class="zoom-btn" style="font-size:8px;width:auto;padding:0 8px" id="btnCCYearClear" aria-label="Clear year filter">✕</button>
             </div>
             <div class="sort-wrap">SORT:
-              <select class="sw-select" id="sortSelect-cc">
+              <select class="sw-select" id="sortSelect-cc" aria-label="Sort events">
                 <option value="date">DATE</option>
                 <option value="distance">DISTANCE</option>
                 <option value="velocity">VELOCITY</option>
@@ -898,14 +898,14 @@ function showLocationPicker(pid, elEncoded, approachDate, intro) {
   el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px;line-height:1.9">
     ${intro || 'Planning to be somewhere else? Type a place to see the view from there.'}
     <div style="display:flex;gap:8px;margin-top:8px">
-      <input id="${pid}_place" placeholder="Type a city or town" style="flex:1;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px" onkeydown="if(event.key==='Enter')searchLocationAndView('${pid}','${elEncoded}','${approachDate}')">
+      <input id="${pid}_place" placeholder="Type a city or town" aria-label="City or town" style="flex:1;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px" onkeydown="if(event.key==='Enter')searchLocationAndView('${pid}','${elEncoded}','${approachDate}')">
       <button class="zoom-btn" style="width:auto;padding:0 12px" onclick="searchLocationAndView('${pid}','${elEncoded}','${approachDate}')">GO</button>
     </div>
     <div id="${pid}_msg" style="margin-top:6px;font-size:9px;color:var(--t3)"></div>
     <details style="margin-top:6px"><summary style="cursor:pointer">Enter coordinates instead</summary>
       <div style="display:flex;gap:8px;margin-top:8px">
-        <input id="${pid}_lat" placeholder="Latitude" type="number" step="0.01" style="flex:1;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px">
-        <input id="${pid}_lon" placeholder="Longitude" type="number" step="0.01" style="flex:1;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px">
+        <input id="${pid}_lat" placeholder="Latitude" aria-label="Latitude" type="number" step="0.01" style="flex:1;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px">
+        <input id="${pid}_lon" placeholder="Longitude" aria-label="Longitude" type="number" step="0.01" style="flex:1;background:var(--card);border:1px solid var(--b2);color:var(--t1);font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px">
         <button class="zoom-btn" style="width:auto;padding:0 12px" onclick="const la=parseFloat(document.getElementById('${pid}_lat').value),lo=parseFloat(document.getElementById('${pid}_lon').value);if(!isNaN(la)&&!isNaN(lo)){userLocationCache={lat:la,lon:lo};userLocationManual=true;doViewFromHere('${pid}','${elEncoded}','${approachDate}');}">GO</button>
       </div>
     </details>
