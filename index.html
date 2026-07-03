@@ -264,6 +264,9 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .zoom-btn:hover { color: var(--c); border-color: var(--c); }
 .solar-date-readout { position: absolute; bottom: 12px; left: 12px; font-family: 'Space Mono', monospace; font-size: 9.5px; letter-spacing: 1.5px; color: var(--t1); background: rgba(7,13,26,.85); border: 1px solid var(--b2); padding: 6px 10px; z-index: 5; }
 .solar-hint { position: absolute; bottom: 12px; right: 12px; font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1px; color: var(--t3); background: rgba(7,13,26,.7); padding: 5px 9px; z-index: 5; }
+.solar-tap-hint { position: absolute; bottom: 76px; left: 50%; transform: translateX(-50%); z-index: 5; font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px; color: var(--read); background: rgba(7,13,26,.75); padding: 5px 10px; white-space: nowrap; }
+.solar-tap-hint.seen { display: none; }
+.hint-touch { display: none; }
 .solar-scrub-wrap { position: absolute; bottom: 40px; left: 12px; right: 12px; display: flex; align-items: center; gap: 8px; background: rgba(7,13,26,.85); border: 1px solid var(--b2); padding: 5px 10px; z-index: 5; }
 .solar-scrub-label { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 1.5px; color: var(--t2); white-space: nowrap; min-width: 38px; }
 #solarScrub { flex: 1; accent-color: var(--c); cursor: pointer; }
@@ -298,6 +301,8 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   .tab-label-short { display: inline; }
   .radar-side, .stats-side, .list-section, .home-side { padding: 16px; }
   .header-date-utc { display: none; }
+  .hint-mouse { display: none; }
+  .hint-touch { display: inline; }
   .header-actions { flex-wrap: wrap; gap: 10px; }
   .solar-hint { display: none; }
   .filter-btn { min-height: 44px; }
@@ -382,6 +387,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
           </div>
           <div class="solar-date-readout" id="solarDateReadout">— — —</div>
           <div class="solar-hint">SCROLL TO ZOOM · DRAG TO PAN · CLICK AN OBJECT</div>
+          <div class="solar-tap-hint" id="solarTapHint"><span class="hint-mouse">Click a planet or asteroid to see how to find it</span><span class="hint-touch">Tap a planet or asteroid to see how to find it</span></div>
         </div>
 
         <div class="home-side">
@@ -1255,6 +1261,7 @@ let playing = true;
 let speedDaysPerSec = 7;
 let view = { scale: 1, panX: 0, panY: 0 };
 let isDragging = false, dragStartX = 0, dragStartY = 0, dragStartPan = { x: 0, y: 0 };
+let hoveredBody = null;
 let layerState = { orbits: true, asteroids: true, comets: true, labels: true, live: true };
 let liveCounts = { ast: null, com: null };
 let lastScreenPositions = [];
@@ -1384,6 +1391,14 @@ function drawSolarSystem(ts) {
     ctx.fillStyle = 'rgba(0,232,144,.95)';
     ctx.fillText(`${total} TRACKED →`, bx + 9, by + 8);
     lastScreenPositions.push({ name: 'live-badge', kind: 'live-badge', sx: bx, sy: by, hitR: 16 });
+  }
+
+  if (hoveredBody) {
+    const h = lastScreenPositions.find(p => p.name === hoveredBody.name);
+    if (h) {
+      ctx.beginPath(); ctx.arc(h.sx, h.sy, (h.hitR || 10) + 4, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0,192,255,.45)'; ctx.lineWidth = 1; ctx.stroke();
+    }
   }
 
   const d = jdToDate(jd);
@@ -1537,11 +1552,23 @@ function initHomeInteractions() {
     if (!isDragging) {
       const rect = canvas.getBoundingClientRect();
       const hit = findBodyAt(e.clientX - rect.left, e.clientY - rect.top);
-      if (hit) showHomeDetail(hit);
+      if (hit) {
+        showHomeDetail(hit);
+        localStorage.setItem('ss_map_tap_seen', '1');
+        document.getElementById('solarTapHint').classList.add('seen');
+      }
     }
     isDragging = false;
   });
   canvas.addEventListener('pointercancel', () => { isDragging = false; });
+  canvas.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse' || e.buttons) return;
+    const rect = canvas.getBoundingClientRect();
+    hoveredBody = findBodyAt(e.clientX - rect.left, e.clientY - rect.top);
+    canvas.style.cursor = hoveredBody ? 'pointer' : '';
+  });
+  canvas.addEventListener('pointerleave', () => { hoveredBody = null; canvas.style.cursor = ''; });
+  if (localStorage.getItem('ss_map_tap_seen')) document.getElementById('solarTapHint').classList.add('seen');
 
   document.getElementById('btnPlayPause').addEventListener('click', function () {
     playing = !playing;
