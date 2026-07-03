@@ -663,6 +663,12 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
 const fmt = (n, d = 1) => (n === null || n === undefined || isNaN(n)) ? '—' : (+n).toFixed(d);
 const dateStr = d => d.toISOString().split('T')[0];
 const localDateStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function deriveCadDes(name) {
+  const cleaned = String(name).replace(/[()]/g, '').trim();
+  if (/^\d{4} [A-Z]{2}\d*$/.test(cleaned)) return cleaned;
+  const m = cleaned.match(/^(\d+) /);
+  return m ? m[1] : cleaned;
+}
 const escapeHTML = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 function idToAngle(id) {
@@ -1806,7 +1812,7 @@ function showAstDetail(obj) {
       <div class="detail-field"><div class="df-label">NASA JPL ID</div><div class="df-value" style="font-size:11px">${obj.id}</div></div>
     </div></div>
     ${visibilityBadgeHTML({ h: obj.magnitude, miss_km: obj.miss_km, type: 'asteroid' })}
-    ${viewFromHereSection(obj.id, obj.date, cachedOrbitalElements[obj.id] || null)}
+    ${viewFromHereSection(deriveCadDes(obj.name), obj.date, cachedOrbitalElements[deriveCadDes(obj.name)] || null)}
     <a href="${obj.url}" target="_blank" rel="noopener noreferrer" class="detail-link">VIEW IN NASA JPL DATABASE →</a>`);
 }
 function initRadarAst() {

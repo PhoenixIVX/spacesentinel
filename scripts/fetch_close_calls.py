@@ -21,7 +21,7 @@ DATE_MIN = "1900-01-01"
 DATE_MAX = "2200-01-01" 
 USER_AGENT = "SpaceSentinel/1.0 (personal project; contact via GitHub repo)"
 REQUEST_TIMEOUT = 120
-MAX_NEW_ELEMENTS_PER_RUN = 1000 
+MAX_NEW_ELEMENTS_PER_RUN = int(os.environ.get("MAX_NEW_ELEMENTS", "1000"))
 
 
 def fetch_json(url, params):
@@ -151,6 +151,14 @@ def main():
 
     all_des = sorted(set(r["des"] for r in events))
     missing = [d for d in all_des if d not in existing]
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    next_approach = {}
+    for r in events:
+        if r["date"] >= today:
+            cur = next_approach.get(r["des"])
+            if cur is None or r["date"] < cur:
+                next_approach[r["des"]] = r["date"]
+    missing.sort(key=lambda d: (next_approach.get(d, "9999-99-99"), d))
     print(f"{len(all_des)} distinct objects, {len(missing)} missing orbital elements")
 
     fetched_this_run = 0
