@@ -21,6 +21,8 @@
 <meta name="twitter:description" content="Track near-Earth asteroids, comets, close approaches and meteor showers — and see when and where to spot them from your own location.">
 <meta name="twitter:image" content="https://spacesentinel.xyz/share-card.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23050A12'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='%2300C0FF'%3E%E2%97%88%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
@@ -2788,6 +2790,7 @@ async function init() {
   initCCEvents();
   fetchCachedElements().then(els => { cachedOrbitalElements = els; });
   loadMeteorShowers().catch(() => {});
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   await Promise.all([loadAsteroids(), loadComets()]);
 }
 document.addEventListener('DOMContentLoaded', init);
