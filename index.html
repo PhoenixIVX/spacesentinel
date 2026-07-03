@@ -1591,7 +1591,7 @@ function renderAstStats(objs) {
   }
 }
 function applyAstFilterSort() {
-  const today = dateStr(new Date());
+  const today = localDateStr(new Date());
   let result = [...allAsteroids];
   if (astFilter === 'hazardous') result = result.filter(o => o.hazardous);
   if (astFilter === 'today') result = result.filter(o => o.date === today);
@@ -2026,7 +2026,7 @@ function renderMeteorCalendar() {
   const cal = document.getElementById('meteorCalendar');
   if (!cal) return;
   const now = new Date();
-  const dayOfYear = Math.floor((now - new Date(Date.UTC(now.getUTCFullYear(),0,1))) / 86400000);
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 1)) / 86400000);
   let html = `<div style="position:relative;height:86px;background:var(--card);border:1px solid var(--b1);overflow:hidden">`;
   for (let m = 0; m < 12; m++) {
     const x = (m / 12) * 100;
@@ -2050,7 +2050,10 @@ function renderMeteorCalendar() {
 }
 function meteorCardHTML(sh) {
   const peak = nextPeakDate(sh);
-  const days = Math.ceil((peak - new Date()) / 86400000);
+  const now = new Date();
+  const peakLocalMidnight = new Date(peak.getUTCFullYear(), peak.getUTCMonth(), peak.getUTCDate());
+  const todayLocalMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((peakLocalMidnight - todayLocalMidnight) / 86400000);
   const active = showerIsActive(sh);
   const countdown = active ? '☄ ACTIVE NOW' : days === 0 ? 'PEAKS TONIGHT' : `PEAKS IN ${days} DAY${days !== 1 ? 'S' : ''}`;
   const hemiLabel = sh.hemi === 'B' ? 'BOTH HEMISPHERES' : sh.hemi === 'N' ? 'FAVORS NORTH' : 'FAVORS SOUTH';
@@ -2678,7 +2681,9 @@ function initCCEvents() {
 
 function initHeaderDate() {
   const d = new Date();
-  document.getElementById('headerDate').textContent = d.toUTCString().replace(' GMT',' UTC').substring(5,29).toUpperCase();
+  const pad = n => String(n).padStart(2, '0');
+  const local = `${pad(d.getDate())} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  document.getElementById('headerDate').textContent = `${local} · ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
 }
 function setHeaderHeightVar() {
   const h = document.querySelector('header').offsetHeight;
