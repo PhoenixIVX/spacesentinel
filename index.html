@@ -2188,6 +2188,18 @@ function preZoneWidth() { return CURATED_PRE1900.length * PRE1900_ITEM_WIDTH + P
 function dateToX(date) { return ((date - DATA_DATE_MIN) / (365.25 * 86400000)) * PX_PER_YEAR * ccZoom; }
 function pre1900X(index) { return PRE1900_ZONE_PAD / 2 + index * PRE1900_ITEM_WIDTH + PRE1900_ITEM_WIDTH / 2; }
 
+function isCometDesignation(s) {
+  return !!s && (/^[cpdxi]\//i.test(s) || /^\d+[pdi]\b/i.test(s));
+}
+function dedupeById(records) {
+  const byId = new Map();
+  records.forEach(r => {
+    const existing = byId.get(r.id);
+    if (!existing || (r.highlighted && !existing.highlighted)) byId.set(r.id, r);
+  });
+  return [...byId.values()];
+}
+
 function setCCStatus(text, hazard) {
   document.getElementById('status-cc').textContent = text;
   document.getElementById('statusDot-cc').className = 'status-dot' + (hazard ? ' hazard' : '');
@@ -2198,18 +2210,19 @@ async function loadCloseCalls() {
   renderTimelineStructure();
   try {
     const data = await fetchCachedEvents();
-    const events = data.events.map(e => {
+    const events = dedupeById(data.events.map(e => {
       const note = CURATED_NOTES[e.des];
+      const type = isCometDesignation(e.name) || isCometDesignation(e.des) ? 'comet' : e.type;
       return {
-        id: e.des + '-' + e.jd, des: e.des, name: e.name, type: e.type,
+        id: e.des + '-' + e.jd, des: e.des, name: e.name, type,
         dateObj: new Date(e.date + 'T00:00:00Z'), dateOnly: e.date, jd: e.jd,
-        dist: e.dist, dist_ld: e.type === 'asteroid' ? e.dist * (AU_KM / 384400) : null,
+        dist: e.dist, dist_ld: type === 'asteroid' ? e.dist * (AU_KM / 384400) : null,
         v_rel: e.v_rel, v_inf: e.v_inf, h: e.h, diameter: e.diameter,
         highlighted: e.highlighted || !!note, curated: !!note, impact: false, preHistory: false,
         note: note || '',
         link: `https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/?sstr=${encodeURIComponent(e.des)}`,
       };
-    });
+    }));
     const impactRecords = CURATED_IMPACTS.map(c => ({
       id: 'impact-' + c.des, des: c.des, name: c.name, type: c.type,
       dateObj: new Date(c.date + 'T00:00:00Z'), dateOnly: c.date, jd: null,
@@ -2250,8 +2263,8 @@ async function loadCloseCalls() {
 function renderCCStats() {
   const total = allCloseCalls.length;
   const highlighted = allCloseCalls.filter(r => r.highlighted).length;
-  const asteroids = allCloseCalls.filter(r => r.type === 'asteroid' && r.dist !== null && !isNaN(r.dist));
-  const comets = allCloseCalls.filter(r => r.type === 'comet' && r.dist !== null && !isNaN(r.dist));
+  const asteroids = allCloseCalls.filter(r => r.type === 'asteroid' && Number.isFinite(r.dist) && r.dist > 0);
+  const comets = allCloseCalls.filter(r => r.type === 'comet' && Number.isFinite(r.dist) && r.dist > 0);
   const closestAst = asteroids.length ? asteroids.reduce((a, b) => (a.dist < b.dist ? a : b)) : null;
   const closestCom = comets.length ? comets.reduce((a, b) => (a.dist < b.dist ? a : b)) : null;
   const now = new Date();
@@ -2259,7 +2272,7 @@ function renderCCStats() {
   countUp(document.querySelector('#stat-total-cc .stat-value'), total, 700);
   countUp(document.querySelector('#stat-highlighted-cc .stat-value'), highlighted, 700);
   const caCard = document.getElementById('stat-closest-ast-cc');
-  if (caCard) { caCard.querySelector('.stat-value').textContent = closestAst ? `${fmt(closestAst.dist_ld, 1)} LD` : '—'; caCard.dataset.id = closestAst ? closestAst.id : ''; }
+  if (caCard) { caCard.querySelector('.stat-value').textContent = closestAst ? `${fmt(closestAst.dist_ld, 2)} LD` : '—'; caCard.dataset.id = closestAst ? closestAst.id : ''; }
   const ccCard = document.getElementById('stat-closest-com-cc');
   if (ccCard) { ccCard.querySelector('.stat-value').textContent = closestCom ? `${fmt(closestCom.dist, 3)} AU` : '—'; ccCard.dataset.id = closestCom ? closestCom.id : ''; }
   const nCard = document.getElementById('stat-next-cc-mini');
