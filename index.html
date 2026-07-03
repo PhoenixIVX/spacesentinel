@@ -307,6 +307,11 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   #historicalStrip > div { min-width: 0 !important; max-width: none !important; }
 }
 
+.install-chip { position: fixed; bottom: 48px; right: 14px; z-index: 90; display: none; align-items: center; gap: 10px; max-width: 320px; background: var(--card); border: 1px solid var(--b3); padding: 9px 12px; font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: 1px; line-height: 1.7; color: var(--t1); box-shadow: 0 4px 24px rgba(0,0,0,.5); }
+.install-chip.visible { display: flex; }
+.install-chip .chip-install { background: none; border: 1px solid var(--c); color: var(--c); font-family: 'Orbitron', sans-serif; font-size: 9px; letter-spacing: 2px; padding: 6px 10px; cursor: pointer; white-space: nowrap; }
+.install-chip .chip-close { background: none; border: none; color: var(--t2); font-size: 12px; padding: 2px 4px; cursor: pointer; }
+
 footer { border-top: 1px solid var(--b1); padding: 10px 28px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; background: rgba(5,10,18,.6); }
 footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 2px; color: var(--t3); }
 
@@ -622,6 +627,12 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
     </section>
 
   </main>
+
+  <div class="install-chip" id="installChip">
+    <span id="installChipText"></span>
+    <button class="chip-install" id="installChipAction" style="display:none">INSTALL APP</button>
+    <button class="chip-close" id="installChipClose">✕</button>
+  </div>
 
   <footer>
     <span id="footerLeft">DATA: NASA NEOWS API · JPL CLOSE-APPROACH DATA API · KEPLERIAN PROPAGATION · PLACE NAMES © OPENSTREETMAP</span>
@@ -2769,6 +2780,41 @@ function initCCEvents() {
 }
 
 
+let deferredInstallPrompt = null;
+function initInstallChip() {
+  const chip = document.getElementById('installChip');
+  const text = document.getElementById('installChipText');
+  const action = document.getElementById('installChipAction');
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (standalone) return;
+  document.getElementById('installChipClose').addEventListener('click', () => {
+    chip.classList.remove('visible');
+    localStorage.setItem('ss_install_dismissed', '1');
+  });
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    if (localStorage.getItem('ss_install_dismissed')) return;
+    text.textContent = 'Get the app version:';
+    action.style.display = '';
+    chip.classList.add('visible');
+  });
+  window.addEventListener('appinstalled', () => {
+    chip.classList.remove('visible');
+    localStorage.setItem('ss_install_dismissed', '1');
+  });
+  action.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    chip.classList.remove('visible');
+  });
+  if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !localStorage.getItem('ss_install_dismissed')) {
+    text.textContent = 'Add this site to your Home Screen from the share menu for the app version.';
+    chip.classList.add('visible');
+  }
+}
 function initHeaderDate() {
   const d = new Date();
   const pad = n => String(n).padStart(2, '0');
@@ -2795,6 +2841,7 @@ async function init() {
   fetchCachedElements().then(els => { cachedOrbitalElements = els; });
   loadMeteorShowers().catch(() => {});
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  initInstallChip();
   await Promise.all([loadAsteroids(), loadComets()]);
 }
 document.addEventListener('DOMContentLoaded', init);
