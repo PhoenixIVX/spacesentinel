@@ -1,0 +1,42 @@
+name: Fetch Approach Pointing
+
+on:
+  schedule:
+    - cron: '30 4 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Fetch approach pointing from JPL Horizons
+        run: python scripts/fetch_pointing.py
+
+      - name: Commit and push if data changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/pointing.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update approach pointing ($(date -u +%Y-%m-%d))"
+            for attempt in 1 2 3; do
+              git pull --rebase origin main
+              git push && break || {
+                [ $attempt -eq 3 ] && echo "Push failed after 3 attempts" && exit 1
+                sleep $((attempt * 10))
+              }
+            done
+          fi

@@ -733,6 +733,7 @@ function visibilityBadgeHTML(params) {
 let userLocationCache = null;
 let userLocationManual = false;
 let cachedOrbitalElements = {};
+let cachedPointing = {};
 
 function compassDirection(az) {
   return ['North','North-Northeast','Northeast','East-Northeast','East','East-Southeast','Southeast','South-Southeast','South','South-Southwest','Southwest','West-Southwest','West','West-Northwest','Northwest','North-Northwest'][Math.round(az / 22.5) % 16];
@@ -812,13 +813,31 @@ function getSunRaDec(jd) {
   const dec = Math.atan2(geo.z, Math.sqrt(geo.x**2 + geo.y**2)) * 180/Math.PI;
   return { ra, dec };
 }
-async function computeSkyWindow(el, approachDate, lat, lon) {
+function pointingFor(des, approachDate) {
+  const p = cachedPointing[des];
+  if (!p || p.date !== approachDate) return null;
+  const base = new Date(approachDate + 'T12:00:00').getTime();
+  const jdStart = jdFromDate(new Date(base));
+  const jdEnd = jdFromDate(new Date(base + 24 * 3600000));
+  const jdLast = p.jd0 + (p.ra.length - 1) * p.stepHours / 24;
+  return jdStart >= p.jd0 && jdEnd <= jdLast ? p : null;
+}
+function interpPointing(p, jd) {
+  const idx = (jd - p.jd0) * 24 / p.stepHours;
+  const i = Math.max(0, Math.min(p.ra.length - 2, Math.floor(idx)));
+  const t = Math.max(0, Math.min(1, idx - i));
+  let r1 = p.ra[i], r2 = p.ra[i + 1];
+  if (r2 - r1 > 180) r2 -= 360;
+  if (r1 - r2 > 180) r2 += 360;
+  return { ra: ((r1 + (r2 - r1) * t) % 360 + 360) % 360, dec: p.dec[i] + (p.dec[i + 1] - p.dec[i]) * t };
+}
+async function computeSkyWindow(el, approachDate, lat, lon, pointing) {
   const base = new Date(approachDate + 'T12:00:00').getTime();
   let best = { alt: -90, az: 0, hour: 12 }, darkBest = null, riseH = null, setH = null;
   let prevAlt = null;
   for (let h = 0; h <= 24; h++) {
     const jd = jdFromDate(new Date(base + h*3600000));
-    const { ra, dec } = getObjRaDec(el, jd);
+    const { ra, dec } = pointing ? interpPointing(pointing, jd) : getObjRaDec(el, jd);
     const { alt, az } = computeAltAz(ra, dec, lat, lon, jd);
     const sun = getSunRaDec(jd);
     const sunAlt = computeAltAz(sun.ra, sun.dec, lat, lon, jd).alt;
@@ -840,33 +859,35 @@ function viewFromHereSection(des, approachDate, orbEl) {
   return `
     <div>
       <div class="detail-sep">WHERE TO LOOK</div>
-      <div id="${pid}" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--read);line-height:2">
+      <div id="${pid}" data-des="${encodeURIComponent(des)}" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--read);line-height:2">
         <div style="margin-bottom:8px;color:var(--t2)">Night to check: <input type="date" class="date-inline" id="${pid}_night" value="${approachDate}" aria-label="Night to check"></div>
         <button class="filter-btn" onclick="doViewFromHere('${pid}','${elSafe}',document.getElementById('${pid}_night')?.value||'${approachDate}')">📍 USE MY LOCATION</button>
         <span style="color:var(--t2);margin-left:10px">Your location is never stored — it’s only used to work out where to look, with the place name provided by OpenStreetMap.</span>
-        <div style="margin-top:6px;color:var(--t2);font-size:9px">${orbEl ? 'Precise direction for the night of closest approach.' : 'We’re still collecting precise data for this object. For exact pointing, use <strong style="color:var(--t1)">Stellarium</strong> or <strong style="color:var(--t1)">SkySafari</strong>.'}</div>
+        <div style="margin-top:6px;color:var(--t2);font-size:9px">${orbEl || pointingFor(des, approachDate) ? 'Precise direction for the night of closest approach.' : 'We’re still collecting precise data for this object. For exact pointing, use <strong style="color:var(--t1)">Stellarium</strong> or <strong style="color:var(--t1)">SkySafari</strong>.'}</div>
       </div>
     </div>`;
 }
 async function doViewFromHere(pid, elEncoded, approachDate) {
   const el = document.getElementById(pid);
   if (!el) return;
+  const des = el.dataset.des ? decodeURIComponent(el.dataset.des) : null;
+  const pointing = des ? pointingFor(des, approachDate) : null;
   el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px">Locating you…</div>`;
   const loc = await getUserLocation();
   if (!loc) {
     showLocationPicker(pid, elEncoded, approachDate, 'Location blocked — type a place instead.');
     return;
   }
-  if (!elEncoded) {
+  if (!elEncoded && !pointing) {
     const place = await reverseGeocode(loc.lat, loc.lon);
     el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px;line-height:1.9">📍 Near <strong style="color:var(--t1)">${place}</strong>${userLocationManual ? '' : '<br><span style="font-size:8.5px;color:var(--t3)">Location from your browser — using a VPN may show the city of your VPN server instead.</span>'}<br>We don\u2019t have enough data yet to calculate where to look for this object — check back soon. For exact pointing, use <strong style="color:var(--t1)">Stellarium</strong> or <strong style="color:var(--t1)">SkySafari</strong>.<br><span style="cursor:pointer;text-decoration:underline;color:var(--t2);font-size:9px" onclick="showLocationPicker('${pid}','${elEncoded}','${approachDate}')">Use a different location</span></div>`;
     return;
   }
   try {
-    const orbEl = JSON.parse(decodeURIComponent(elEncoded));
+    const orbEl = elEncoded ? JSON.parse(decodeURIComponent(elEncoded)) : null;
     el.innerHTML = `<div style="color:var(--t2);font-family:'Space Mono',monospace;font-size:10px">Computing sky position…</div>`;
     const [{ best, darkBest, riseH, setH }, place] = await Promise.all([
-      computeSkyWindow(orbEl, approachDate, loc.lat, loc.lon),
+      computeSkyWindow(orbEl, approachDate, loc.lat, loc.lon, pointing),
       reverseGeocode(loc.lat, loc.lon),
     ]);
     const everUp = best.alt > 0;
@@ -1640,6 +1661,7 @@ const CONFIG = {
 
   CLOSE_CALLS_URL:    'data/close-calls-events.json',
   ORBITAL_ELEMENTS_URL: 'data/orbital-elements.json',
+  POINTING_URL:       'data/pointing.json',
   METEOR_SHOWERS_URL:   'data/meteor-showers.json',
 
   JPL_CAD_URL:        'https://ssd-api.jpl.nasa.gov/cad.api',
@@ -2905,6 +2927,7 @@ async function init() {
   initComEvents();
   initCCEvents();
   fetchCachedElements().then(els => { cachedOrbitalElements = els; });
+  fetch(CONFIG.POINTING_URL).then(r => r.ok ? r.json() : null).then(p => { if (p) cachedPointing = p.objects || {}; }).catch(() => {});
   loadMeteorShowers().catch(() => {});
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   initInstallChip();
