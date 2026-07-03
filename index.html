@@ -608,6 +608,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
 
 const fmt = (n, d = 1) => (n === null || n === undefined || isNaN(n)) ? '—' : (+n).toFixed(d);
 const dateStr = d => d.toISOString().split('T')[0];
+const localDateStr = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const escapeHTML = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 function idToAngle(id) {
@@ -734,7 +735,7 @@ function getObjRaDec(el, jd) {
   return { ra, dec };
 }
 async function computeSkyWindow(el, approachDate, lat, lon) {
-  const base = new Date(approachDate + 'T00:00:00Z').getTime();
+  const base = new Date(approachDate + 'T12:00:00').getTime();
   let best = { alt: -90, az: 0, hour: 12 }, riseH = null, setH = null;
   let prevAlt = null;
   for (let h = 0; h <= 24; h++) {
@@ -795,7 +796,7 @@ async function doViewFromHere(pid, elEncoded, approachDate) {
       reverseGeocode(loc.lat, loc.lon),
     ]);
     const isVisible = best.alt > 0;
-    const dayStartMs = new Date(approachDate + 'T00:00:00Z').getTime();
+    const dayStartMs = new Date(approachDate + 'T12:00:00').getTime();
     const hStr = h => {
       const d = new Date(dayStartMs + h * 3600000);
       return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')} local`;
@@ -1377,7 +1378,7 @@ function showHomeDetail(hit) {
           <div class="detail-field"><div class="df-label">${gloss('SEMI-MAJOR AXIS','SMA')}</div><div class="df-value" style="font-size:12px">${fmt(p.el.a,3)} AU</div></div>
         </div>
       </div>
-      ${p.name !== 'Earth' ? viewFromHereSection(p.name, new Date(simTime).toISOString().slice(0,10), p.el) : ''}`);
+      ${p.name !== 'Earth' ? viewFromHereSection(p.name, localDateStr(new Date()), p.el) : ''}`);
     return;
   }
   const b = SMALL_BODIES.find(x => x.name === hit.name);
@@ -1406,7 +1407,7 @@ function showHomeDetail(hit) {
       </div>
     </div>
     <div class="detail-prose" style="opacity:.7;font-size:11px">Discovered: ${b.facts.discovered}</div>
-    ${viewFromHereSection(b.name, new Date(simTime).toISOString().slice(0,10), b.el)}
+    ${viewFromHereSection(b.name, localDateStr(new Date()), b.el)}
     <a href="${b.facts.link}" target="_blank" rel="noopener noreferrer" class="detail-link">VIEW LIVE DATA ON THESKYLIVE →</a>`);
 }
 
