@@ -2,6 +2,7 @@
 import json
 import math
 import os
+import re
 import time
 import urllib.request
 import urllib.parse
@@ -11,6 +12,7 @@ CAD_URL = "https://ssd-api.jpl.nasa.gov/cad.api"
 SBDB_URL = "https://ssd-api.jpl.nasa.gov/sbdb.api"
 DATA_DIR = "data"
 EVENTS_FILE = os.path.join(DATA_DIR, "close-calls-events.json")
+ASTEROIDS_FILE = os.path.join(DATA_DIR, "asteroids.json")
 ELEMENTS_FILE = os.path.join(DATA_DIR, "orbital-elements.json")
 
 DATE_MIN = "1900-01-01"
@@ -18,6 +20,14 @@ DATE_MAX = "2200-01-01"
 USER_AGENT = "SpaceSentinel/1.0 (personal project; contact via GitHub repo)"
 REQUEST_TIMEOUT = 120
 MAX_NEW_ELEMENTS_PER_RUN = int(os.environ.get("MAX_NEW_ELEMENTS", "1000"))
+
+
+def derive_cad_des(name):
+    cleaned = re.sub(r"[()]", "", str(name)).strip()
+    if re.match(r"^\d{4} [A-Z]{2}\d*$", cleaned):
+        return cleaned
+    m = re.match(r"^(\d+) ", cleaned)
+    return m.group(1) if m else cleaned
 
 
 def fetch_json(url, params):
@@ -145,7 +155,16 @@ def main():
         with open(ELEMENTS_FILE) as f:
             existing = json.load(f).get("elements", {})
 
-    all_des = sorted(set(r["des"] for r in events))
+    neows_dates = {}
+    if os.path.exists(ASTEROIDS_FILE):
+        with open(ASTEROIDS_FILE) as f:
+            neows = json.load(f)["asteroids"]
+        for r in neows:
+            des = derive_cad_des(r["name"])
+            if des not in neows_dates or r["date"] < neows_dates[des]:
+                neows_dates[des] = r["date"]
+
+    all_des = sorted(set(r["des"] for r in events) | set(neows_dates))
     missing = [d for d in all_des if d not in existing]
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     next_approach = {}
@@ -154,6 +173,10 @@ def main():
             cur = next_approach.get(r["des"])
             if cur is None or r["date"] < cur:
                 next_approach[r["des"]] = r["date"]
+    for des, date in neows_dates.items():
+        cur = next_approach.get(des)
+        if cur is None or date < cur:
+            next_approach[des] = date
     missing.sort(key=lambda d: (next_approach.get(d, "9999-99-99"), d))
     print(f"{len(all_des)} distinct objects, {len(missing)} missing orbital elements")
 

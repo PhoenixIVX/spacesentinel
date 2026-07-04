@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import re
 import time
 import urllib.parse
 import urllib.request
@@ -9,10 +10,19 @@ from datetime import datetime, timedelta, timezone
 HORIZONS_URL = "https://ssd.jpl.nasa.gov/api/horizons.api"
 DATA_DIR = "data"
 EVENTS_FILE = os.path.join(DATA_DIR, "close-calls-events.json")
+ASTEROIDS_FILE = os.path.join(DATA_DIR, "asteroids.json")
 POINTING_FILE = os.path.join(DATA_DIR, "pointing.json")
 WINDOW_DAYS = 60
 USER_AGENT = "SpaceSentinel/1.0 (personal project; contact via GitHub repo)"
 REQUEST_TIMEOUT = 120
+
+
+def derive_cad_des(name):
+    cleaned = re.sub(r"[()]", "", str(name)).strip()
+    if re.match(r"^\d{4} [A-Z]{2}\d*$", cleaned):
+        return cleaned
+    m = re.match(r"^(\d+) ", cleaned)
+    return m.group(1) if m else cleaned
 
 
 def fetch_text(params):
@@ -84,6 +94,15 @@ def main():
         if today <= d <= horizon:
             if e["des"] not in upcoming or e["date"] < upcoming[e["des"]]["date"]:
                 upcoming[e["des"]] = e
+    if os.path.exists(ASTEROIDS_FILE):
+        with open(ASTEROIDS_FILE) as f:
+            asteroids = json.load(f)["asteroids"]
+        for r in asteroids:
+            des = derive_cad_des(r["name"])
+            d = datetime.strptime(r["date"], "%Y-%m-%d").date()
+            if today <= d <= horizon:
+                if des not in upcoming or r["date"] < upcoming[des]["date"]:
+                    upcoming[des] = {"des": des, "type": "asteroid", "date": r["date"]}
     print(f"{len(upcoming)} objects with approaches in the next {WINDOW_DAYS} days")
 
     objects = {}
