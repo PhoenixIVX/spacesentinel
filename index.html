@@ -715,18 +715,32 @@ function classifyVisibility({ h, miss_km, type }) {
   return { apparentMag, tier, isComet, uncertain: isComet };
 }
 
-function visibilityBadgeHTML(params) {
-  const { apparentMag, tier, isComet, uncertain } = classifyVisibility(params);
-  if (apparentMag === null) return '';
-  const mag = apparentMag.toFixed(1);
-  const caveat = uncertain ? '<br><span style="color:var(--t2);font-size:9px">⚠ Comet brightness is inherently uncertain — comets often surprise in both directions.</span>' : '';
+function visibilityBannerHTML(tierLabel, mag, note, caveat) {
   return `<div class="note-banner" style="background:rgba(0,192,255,.05)">
     <div class="pha-icon" style="font-size:15px">👁</div>
     <div class="note-text" style="color:var(--t1)">
-      <strong style="color:var(--c)">${tier.label}</strong> &nbsp;·&nbsp; est. mag ${mag}<br>
-      <span style="color:var(--read)">${tier.note}</span>${caveat}
+      <strong style="color:var(--c)">${tierLabel}</strong> &nbsp;·&nbsp; est. mag ${mag}<br>
+      <span style="color:var(--read)">${note}</span>${caveat}
     </div>
   </div>`;
+}
+
+function visibilityBadgeHTML(params) {
+  const { apparentMag, tier, isComet, uncertain } = classifyVisibility(params);
+  if (apparentMag === null) return `<div class="note-banner" style="background:rgba(0,192,255,.05)">
+    <div class="pha-icon" style="font-size:15px">👁</div>
+    <div class="note-text" style="color:var(--t1)"><span style="color:var(--read)">Brightness data not available for this object.</span></div>
+  </div>`;
+  const caveat = uncertain ? '<br><span style="color:var(--t2);font-size:9px">⚠ Comet brightness is inherently uncertain — comets often surprise in both directions.</span>' : '';
+  return visibilityBannerHTML(tier.label, apparentMag.toFixed(1), tier.note, caveat);
+}
+
+function planetVisibilityHTML(p, jd) {
+  const mag = planetApparentMagnitude(p.name, jd);
+  if (mag === null) return '';
+  const tier = VIS_TIERS.find(t => mag <= t.maxMag) || VIS_TIERS[3];
+  const note = tier.id === 'naked_eye' ? 'Visible without equipment when it’s above the horizon and the sky is dark.' : tier.note;
+  return visibilityBannerHTML(tier.label, mag.toFixed(1), note, '');
 }
 
 
@@ -1054,6 +1068,39 @@ function planetElements(a, e, i, L, wbar, Om) {
   return { a, e, i, om: Om, w, Tp, period };
 }
 
+function planetApparentMagnitude(name, jd) {
+  const planet = PLANETS.find(p => p.name === name);
+  if (!planet || name === 'Earth') return null;
+  const earthEl = PLANETS.find(p => p.name === 'Earth').el;
+  const pos = bodyPosition(planet.el, jd);
+  const earth = bodyPosition(earthEl, jd);
+  const gx = pos.x - earth.x, gy = pos.y - earth.y, gz = pos.z - earth.z;
+  const delta = Math.sqrt(gx*gx + gy*gy + gz*gz);
+  const cosPhase = (pos.r*pos.r + delta*delta - earth.r*earth.r) / (2 * pos.r * delta);
+  const phase = Math.acos(Math.min(1, Math.max(-1, cosPhase))) * 180 / Math.PI;
+  const distTerm = 5 * Math.log10(pos.r * delta);
+  if (name === 'Saturn') {
+    const ringInc = 28.06 * Math.PI/180;
+    const ringNode = (169.51 + 3.82e-5 * (jd - 2451545.0)) * Math.PI/180;
+    const geoLat = Math.asin(gz / delta);
+    const geoLon = Math.atan2(gy, gx);
+    const tilt = Math.asin(Math.sin(geoLat)*Math.cos(ringInc) - Math.cos(geoLat)*Math.sin(ringInc)*Math.sin(geoLon - ringNode));
+    const sinTilt = Math.sin(Math.abs(tilt));
+    return -9.0 + 0.044*phase + sinTilt*(-2.6 + 1.2*sinTilt) + distTerm;
+  }
+  const coeffs = {
+    Mercury: [-0.60, 4.98, -4.88, 3.02],
+    Venus:   phase < 163.6 ? [-4.47, 1.03, 0.57, 0.13] : [0.98, -1.02, 0, 0],
+    Mars:    [-1.52, 1.60, 0, 0],
+    Jupiter: [-9.40, 0.50, 0, 0],
+    Uranus:  [-7.19, 0.25, 0, 0],
+    Neptune: [-6.87, 0, 0, 0],
+  }[name];
+  if (!coeffs) return null;
+  const x = phase / 100;
+  return coeffs[0] + x*(coeffs[1] + x*(coeffs[2] + x*coeffs[3])) + distTerm;
+}
+
 const PLANETS = [
   { name: 'Mercury', color: '#B7B0A6', r: 3.0, el: planetElements(0.38709893,0.20563069,7.00487,252.25084,77.45645,48.33167),
     facts: { type:'Terrestrial planet', diameter:'4,879 km', moons:'0', note:'The smallest and fastest planet, Mercury races around the Sun in just 88 days. Daytime surface temperatures swing over 600°C between sunlit and shadowed regions.' } },
@@ -1068,7 +1115,7 @@ const PLANETS = [
   { name: 'Saturn', color: '#E3D2A0', r: 8.3, el: planetElements(9.53707032,0.05415060,2.48446,49.94432,92.43194,113.71504),
     facts: { type:'Gas giant', diameter:'116,460 km', moons:'140+ confirmed', note:'Famous for its dazzling ring system made of ice and rock fragments. Its moon Titan has a thick atmosphere and lakes of liquid methane.' } },
   { name: 'Uranus', color: '#9FE0E0', r: 6.4, el: planetElements(19.19126393,0.04716771,0.76986,313.23218,170.96424,74.22988),
-    facts: { type:'Ice giant', diameter:'50,724 km', moons:'27 confirmed', note:'Tipped over on its side at a 98° axial tilt, likely from an ancient collision — it essentially rolls around the Sun rather than spinning upright.' } },
+    facts: { type:'Ice giant', diameter:'50,724 km', moons:'28 confirmed', note:'Tipped over on its side at a 98° axial tilt, likely from an ancient collision — it essentially rolls around the Sun rather than spinning upright.' } },
   { name: 'Neptune', color: '#5C7FE0', r: 6.2, el: planetElements(30.06896348,0.00858587,1.76917,304.88003,44.97135,131.72169),
     facts: { type:'Ice giant', diameter:'49,244 km', moons:'14 confirmed', note:'The windiest world known, with supersonic storms clocked near 2,100 km/h. It was the first planet located by mathematical prediction rather than direct observation.' } },
 ];
@@ -1081,7 +1128,7 @@ const SMALL_BODIES = [
   { name: 'Pallas', type: 'asteroid', designation: '2 Pallas', el: { a:2.76963168,e:0.23008437,i:34.92703056,om:172.918132705,w:310.86479846644,Tp:2460010.5573,period:1683.5711 },
     facts: { subtitle:'Main Asteroid Belt', diameter:'~545 km', discovered:'Heinrich Olbers, 28 Mar 1802', note:'Tilted a striking 35° from the plane the other planets orbit in — far more inclined than any other large asteroid — making Pallas a real outlier in the belt.', link:'https://theskylive.com/pallas-info' } },
   { name: 'Eros', type: 'asteroid', designation: '433 Eros', el: { a:1.45812914,e:0.22278189,i:10.82782330,om:304.28704011911,w:178.92699517952,Tp:2459802.6017,period:643.1206 },
-    facts: { subtitle:'Near-Earth Asteroid (Amor)', diameter:'34 × 11 × 11 km', discovered:'Gustav Witt, 13 Aug 1898', note:'An elongated, peanut-shaped asteroid that made history in 2000 as the first asteroid ever orbited, and then landed on, by a spacecraft — NASA\u2019s NEAR Shoemaker.', link:'https://theskylive.com/eros-info' } },
+    facts: { subtitle:'Near-Earth Asteroid (Amor)', diameter:'34 × 11 × 11 km', discovered:'Gustav Witt, 13 Aug 1898', note:'An elongated, peanut-shaped asteroid that made history as the first asteroid ever orbited by a spacecraft, in 2000, and the first ever landed on, in February 2001 — NASA\u2019s NEAR Shoemaker.', link:'https://theskylive.com/eros-info' } },
   { name: 'Bennu', type: 'asteroid', designation: '101955 Bennu', el: { a:1.12639103,e:0.20374508,i:6.03494377,om:2.0608661956964,w:66.223060840843,Tp:2455439.1419,period:436.6487 },
     facts: { subtitle:'Near-Earth Asteroid (Apollo) · PHA', diameter:'~490 m', discovered:'LINEAR survey, Sep 1999', note:'A carbon-rich, rubble-pile asteroid and target of NASA\u2019s OSIRIS-REx mission, which collected a surface sample and returned it to Earth in 2023. Tracked closely as a potentially hazardous asteroid, with a small chance of a distant-future close encounter being refined by ongoing observation.', link:'https://theskylive.com/bennu-info' } },
   { name: 'Apophis', type: 'asteroid', designation: '99942 Apophis', el: { a:0.9225071817,e:0.1915216894,i:3.336751320,om:204.0389272089,w:126.6520518369,Tp:2459101.0394225,period:323.66 },
@@ -1528,6 +1575,7 @@ function showHomeDetail(hit) {
           <div class="detail-field"><div class="df-label">${gloss('SEMI-MAJOR AXIS','SMA')}</div><div class="df-value" style="font-size:12px">${fmt(p.el.a,3)} AU</div></div>
         </div>
       </div>
+      ${planetVisibilityHTML(p, jd)}
       ${p.name !== 'Earth' ? viewFromHereSection(p.name, localDateStr(new Date()), p.el) : ''}`);
     return;
   }
@@ -2784,7 +2832,7 @@ function showCCDetail(rec) {
       ${!rec.preHistory ? `<div class="detail-field"><div class="df-label">${gloss('ABS. MAGNITUDE', 'H')}</div><div class="df-value">${rec.h !== null ? fmt(rec.h, 1) : '—'}<span class="u"> H</span></div></div>` : ''}
     </div></div>
     <div class="note-banner"><div class="pha-icon">ℹ</div><div class="note-text">${banner}</div></div>
-    ${!rec.preHistory && rec.h !== null ? visibilityBadgeHTML({ h: rec.h, miss_km: rec.type === 'asteroid' ? (rec.dist_ld * 384400) : (rec.dist * AU_KM), type: rec.type }) : ''}
+    ${!rec.preHistory ? visibilityBadgeHTML({ h: rec.h, miss_km: rec.type === 'asteroid' ? (rec.dist_ld * 384400) : (rec.dist * AU_KM), type: rec.type }) : ''}
     ${!rec.preHistory ? viewFromHereSection(rec.des || rec.id, rec.dateOnly, cachedOrbitalElements[rec.des] || null) : ''}
     ${rec.link ? `<a href="${rec.link}" target="_blank" rel="noopener noreferrer" class="detail-link">VIEW IN JPL SMALL-BODY DATABASE →</a>` : ''}`);
 }
