@@ -45,6 +45,16 @@ def tier_for_mag(mag: float) -> dict:
             return t
     return VIS_TIERS[-1]
 
+def resolve_miss_km(obj: dict) -> Optional[float]:
+    for value, factor in ((obj.get('miss_km'), 1.0), (obj.get('miss_ld'), 384_400.0), (obj.get('dist'), AU_KM)):
+        try:
+            v = float(value)
+        except (TypeError, ValueError):
+            continue
+        if v > 0:
+            return v * factor
+    return None
+
 def subscriber_tier_index(threshold_tier: str) -> int:
     if threshold_tier == 'any':
         return len(TIER_ORDER) - 1
@@ -63,21 +73,14 @@ def object_meets_threshold(obj: dict, thresholds: dict) -> bool:
         return False
 
     h       = obj.get('h') or obj.get('magnitude')
-    miss_km = obj.get('miss_km') or (obj.get('miss_ld', 0) * 384_400)
-    if obj_type == 'comet':
-        miss_km = (obj.get('dist', 0) * AU_KM)
-
     if h is None:
         return False
 
-    try:
-        miss_km_val = float(miss_km)
-    except (TypeError, ValueError):
-        return False
-    if not miss_km_val or miss_km_val <= 0:
+    miss_km = resolve_miss_km(obj)
+    if miss_km is None:
         return False
 
-    mag = apparent_mag(float(h), miss_km_val, is_comet)
+    mag = apparent_mag(float(h), miss_km, is_comet)
     if mag is None:
         return False
 
@@ -88,7 +91,9 @@ def object_meets_threshold(obj: dict, thresholds: dict) -> bool:
 
     max_ld = thresholds.get('max_dist_ld')
     if max_ld is not None:
-        miss_ld = obj.get('miss_ld') or miss_km / 384_400
+        miss_ld = obj.get('miss_ld')
+        if miss_ld is None:
+            miss_ld = miss_km / 384_400
         if float(miss_ld) > float(max_ld):
             return False
 
@@ -148,21 +153,22 @@ def render_email(subscriber: dict, objects: list, reminder_label: str = '', show
     showers = showers or []
     rows = ''
     for obj in objects:
-        h       = obj.get('h') or obj.get('magnitude')
-        miss_km = obj.get('miss_km') or obj.get('miss_ld', 0) * 384_400
-        if obj.get('type') == 'comet':
-            miss_km = obj.get('dist', 0) * AU_KM
+        h        = obj.get('h') or obj.get('magnitude')
         is_comet = obj.get('type') == 'comet'
-        mag = apparent_mag(float(h), float(miss_km), is_comet) if h else None
+        miss_km  = resolve_miss_km(obj)
+        mag = apparent_mag(float(h), miss_km, is_comet) if h and miss_km else None
         tier = tier_for_mag(mag)['label'] if mag is not None else 'Unknown'
         mag_str = f'{mag:.1f}' if mag is not None else '—'
         caveat = ' (comet — estimate uncertain)' if is_comet else ''
-        if 'miss_ld' in obj:
-            dist_str = f"{obj['miss_ld']:.2f} LD"
-            dist_context = dist_plain_english(obj['miss_ld'])
-        else:
+        if is_comet:
             dist_str = f"{obj.get('dist', 0):.2f} AU"
             dist_context = 'a distant pass, far beyond the Moon'
+        else:
+            miss_ld = obj.get('miss_ld')
+            if miss_ld is None and miss_km:
+                miss_ld = miss_km / 384_400
+            dist_str = f"{miss_ld:.2f} LD" if miss_ld is not None else '—'
+            dist_context = dist_plain_english(miss_ld) if miss_ld is not None else ''
         rows += f"""
         <tr>
           <td style="padding:10px 14px;border-bottom:1px solid #0c1e38">
