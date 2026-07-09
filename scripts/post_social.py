@@ -11,7 +11,7 @@ for key in ('SUPABASE_URL', 'SUPABASE_SERVICE_KEY', 'RESEND_API_KEY'):
 from atproto import Client, client_utils
 
 from fetch_pointing import derive_cad_des
-from send_alerts import TIER_ORDER, apparent_mag, resolve_miss_km, tier_for_mag
+from send_alerts import TIER_ORDER, apparent_mag, dist_plain_english, resolve_miss_km, tier_for_mag
 
 SITE_URL = os.environ.get('SITE_URL', 'https://spacesentinel.xyz')
 SOURCE_FILES = ['data/asteroids.json', 'data/close-calls-events.json']
@@ -87,10 +87,11 @@ def compose(obj, tier):
     des = designation(obj)
     d = datetime.strptime(obj['date'], '%Y-%m-%d')
     ld = resolve_miss_km(obj) / 384_400
+    dist_phrase = dist_plain_english(ld) if ld < 1 else f'about {ld:.1f}× the Moon’s distance'
     url = f'{SITE_URL}/#object={urllib.parse.quote(des)}'
     for name in (display_name(obj), des):
         prefix = (
-            f'Asteroid {name} passes about {ld:.1f}× the Moon’s distance '
+            f'Asteroid {name} passes {dist_phrase} '
             f'from Earth {d:%A}, {d:%B} {d.day} — {TIER_PHRASES[tier["id"]]}. '
             f'See if it’s visible from your location: '
         )
