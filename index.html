@@ -754,9 +754,10 @@ function compassDirection(az) {
 }
 function fistWidths(alt) {
   if (alt <= 0) return '';
-  const fists = Math.round(alt / 10);
-  if (fists <= 0) return 'just above the horizon';
-  return `about ${fists} fist-width${fists !== 1 ? 's' : ''} above the horizon`;
+  const fists = Math.round(alt / 10 * 2) / 2;
+  if (fists < 1) return 'less than a fist above the horizon — very low';
+  const label = Number.isInteger(fists) ? `${fists}` : `${Math.floor(fists)}½`;
+  return `about ${label} fist-width${fists !== 1 ? 's' : ''} above the horizon`;
 }
 function altDesc(alt) {
   if (alt < 0) return 'below the horizon — not visible from your location on this date';
