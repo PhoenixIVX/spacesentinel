@@ -25,7 +25,7 @@ jobs:
 
       - name: Post upcoming observable approaches to Bluesky
         env:
-          DRY_RUN: '1'
+          DRY_RUN: '0'
           BLUESKY_HANDLE: ${{ secrets.BLUESKY_HANDLE }}
           BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
         run: python scripts/post_social.py
