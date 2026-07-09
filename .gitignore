@@ -5,3 +5,4 @@ kb/
 CLAUDE.md
 .claude/
 __pycache__/
+*.sql
