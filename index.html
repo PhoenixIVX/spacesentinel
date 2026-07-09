@@ -471,6 +471,7 @@ footer span { font-family: 'Space Mono', monospace; font-size: 8px; letter-spaci
     </section>
 
     <section class="tab-panel" id="panel-asteroids">
+      <div class="note-banner" id="deepLinkNotice" hidden style="margin-bottom:16px"><div class="pha-icon">ℹ</div><div class="note-text" style="flex:1">That object is no longer in the current watch window.</div><button class="detail-close" style="align-self:flex-start" onclick="document.getElementById('deepLinkNotice').hidden = true">[ DISMISS ]</button></div>
       <section class="hero-section">
         <div class="radar-side">
           <div class="eyebrow">PROXIMITY RADAR — 28-DAY SCAN WINDOW</div>
@@ -1336,6 +1337,21 @@ function switchTab(tab) {
   }, 180);
 }
 document.querySelectorAll('.nav-tab').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+function parseObjectHash() {
+  const m = location.hash.match(/^#object=(.+)$/);
+  if (!m) return null;
+  try { return decodeURIComponent(m[1]).trim() || null; } catch { return null; }
+}
+function handleObjectDeepLink() {
+  const des = parseObjectHash();
+  if (!des) return;
+  const target = des.toUpperCase();
+  const obj = allAsteroids.find(o => deriveCadDes(o.name).toUpperCase() === target);
+  switchTab('asteroids');
+  if (obj) showAstDetail(obj);
+  else document.getElementById('deepLinkNotice').hidden = false;
+}
 
 
 let simTime = Date.now();
@@ -2975,12 +2991,16 @@ async function init() {
   initRadarCom();
   initComEvents();
   initCCEvents();
-  fetchCachedElements().then(els => { cachedOrbitalElements = els; });
-  fetch(CONFIG.POINTING_URL).then(r => r.ok ? r.json() : null).then(p => { if (p) cachedPointing = p.objects || {}; }).catch(() => {});
+  const elementsReady = fetchCachedElements().then(els => { cachedOrbitalElements = els; });
+  const pointingReady = fetch(CONFIG.POINTING_URL).then(r => r.ok ? r.json() : null).then(p => { if (p) cachedPointing = p.objects || {}; }).catch(() => {});
   loadMeteorShowers().catch(() => {});
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   initInstallChip();
   await Promise.all([loadAsteroids(), loadComets()]);
+  if (parseObjectHash()) {
+    await Promise.allSettled([elementsReady, pointingReady]);
+    handleObjectDeepLink();
+  }
 }
 document.addEventListener('DOMContentLoaded', init);
 </script>
